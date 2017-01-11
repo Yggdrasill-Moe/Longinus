@@ -52,24 +52,28 @@ PVOID g_pOldGetGlyphOutlineW = NULL;
 typedef int (WINAPI *PfuncGetGlyphOutlineW)(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer, MAT2 *lpmat2);
 int WINAPI NewGetGlyphOutlineW(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer, MAT2* lpmat2)
 {
-	uChar = data[uChar];
+	if (uChar < 0xA000)
+		uChar = data[uChar];
 	return ((PfuncGetGlyphOutlineW)g_pOldGetGlyphOutlineW)(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
 }
 //边界检测
 //cmp al,0x9F
-//9处
 void BorderPatch()
 {
 	unit8 Border = 0xFE;
-	//memcpy((void*)0x40593B, &Border, 1);
-	//memcpy((void*)0x4B13D3, &Border, 1);
-	//memcpy((void*)0x4FE43E, &Border, 1);
-	//memcpy((void*)0x4FF90E, &Border, 1);
-	//memcpy((void*)0x643833, &Border, 1);
-	memcpy((void*)0x64505D, &Border, 1);
-	//memcpy((void*)0x64536A, &Border, 1);
-	//memcpy((void*)0x645866, &Border, 1);
-	//memcpy((void*)0x645BDE, &Border, 1);
+	memcpy((void*)0x40511E, &Border, 1);
+	memcpy((void*)0x405A6B, &Border, 1);
+	memcpy((void*)0x4B5093, &Border, 1);
+	memcpy((void*)0x4EBD2A, &Border, 1);
+	memcpy((void*)0x50397E, &Border, 1);
+	memcpy((void*)0x504E4E, &Border, 1);
+	memcpy((void*)0x64DD6D, &Border, 1);
+	memcpy((void*)0x64DE14, &Border, 1);
+	memcpy((void*)0x64DF25, &Border, 1);
+	memcpy((void*)0x64E07A, &Border, 1);
+	memcpy((void*)0x64E16C, &Border, 1);
+	memcpy((void*)0x64E577, &Border, 1);
+	memcpy((void*)0x64E8EE, &Border, 1);
 }
 //选择中文字体，配合CreateFontIndirectA
 void EnumFontFamiliesAPatch()
@@ -93,9 +97,9 @@ BOOL APIENTRY SetHook()
 	DetourAttach(&g_pOldCreateFontA, NewCreateFontA);
 	g_pOldGetGlyphOutlineW = DetourFindFunction("GDI32.dll", "GetGlyphOutline");
 	DetourAttach(&g_pOldGetGlyphOutlineW, NewGetGlyphOutlineW);
-	//g_pOldCreateFontA = DetourFindFunction("kernel32.dll", "MultiByteToWideChar");
-	//DetourAttach(&g_pOldMultiByteToWideChar, NewMultiByteToWideChar);
-	//BorderPatch();
+	g_pOldMultiByteToWideChar = DetourFindFunction("kernel32.dll", "MultiByteToWideChar");
+	DetourAttach(&g_pOldMultiByteToWideChar, NewMultiByteToWideChar);
+	BorderPatch();
 	EnumFontFamiliesAPatch();
 	LONG ret = DetourTransactionCommit();
 	return ret == NO_ERROR;
@@ -110,7 +114,7 @@ BOOL APIENTRY DropHook()
 	DetourDetach(&g_pOldCreateFontIndirectA, NewCreateFontIndirectA);
 	DetourDetach(&g_pOldCreateFontA, NewCreateFontA);
 	DetourDetach(&g_pOldGetGlyphOutlineW, NewGetGlyphOutlineW);
-	//DetourDetach(&g_pOldMultiByteToWideChar, NewMultiByteToWideChar);
+	DetourDetach(&g_pOldMultiByteToWideChar, NewMultiByteToWideChar);
 	LONG ret = DetourTransactionCommit();
 	return ret == NO_ERROR;
 }
