@@ -13,12 +13,12 @@ struct IsOpen_s
 	BOOL OpenCreateFontIndirectA;
 	BOOL OpenCreateFontA;
 	BOOL OpenMultiByteToWideChar;
-	BOOL OpenGetGlyphOutlineW;
-	BOOL OpenGetGlyphOutlineA;
+	BOOL OpenGetGlyphOutline;
 	BOOL OpenCreateFileA;
 	BOOL OpenCreateFileW;
 	BOOL OpenSetWindowTextA;
 	BOOL OpenMessageBoxA;
+	BOOL OpenCreateWindowExA;
 	BOOL OpenGetProcAddress;
 	BOOL OpenEnumFontFamiliesA;
 	BOOL OpenBorderPatch;

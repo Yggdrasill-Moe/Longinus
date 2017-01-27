@@ -1,9 +1,9 @@
 /*
-Áî®‰∫éÂÆûÁé∞ÊîπËøõÂêéÁöÑNeXASÂºïÊìé
-Ëá™Âà∂Â≠óÂ∫ì‰∏éGetGlyphOutline
-Áõ∏ÂÖºÂÆπÁöÑÊ±âÂåñÊñπÂºè
+”√”⁄ µœ÷◊‘÷∆◊÷ø‚
+”ÎGetGlyphOutline
+œ‡ºÊ»›µƒ∫∫ªØ∑Ω Ω
 
-made by YggdrasillÔºàDarkness-TX & Destiny„ÅÆÁÅ´ÁãêÔºâ
+made by Yggdrasill£®Darkness-TX & Destiny§Œª∫¸£©
 2017.01.09
 */
 #include "Longinus.h"
@@ -80,7 +80,7 @@ int WINAPI NewCreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShar
 		q = q->next;
 		if (strcmp(lpFileName, q->OldFileName) == 0)
 		{
-			filename = q->NewFileName;
+			strcpy((char *)filename, q->NewFileName);
 			break;
 		}
 	}
@@ -101,7 +101,7 @@ int WINAPI NewCreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwSha
 		q = q->next;
 		if (wcscmp(lpFileName, q->OldFileName) == 0)
 		{
-			filename = q->NewFileName;
+			wcscpy((wchar_t *)filename, q->NewFileName);
 			break;
 		}
 	}
@@ -115,7 +115,7 @@ typedef int (WINAPI *PfuncCreateWindowExA)(DWORD dwExStyle, LPCSTR lpClassName, 
 int WINAPI NewCreateWindowExA(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y,
 	int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 {
-	LPCSTR titlename = "È≠îÂ•≥ÊÅãÁà±Êó•ËÆ∞|Áà±‰∏Ω‰∏ùÂêéÂÆ´Âçè‰ºöÔºàËØ∑ÂãøÁΩëÁªúÁõ¥Êí≠Êú¨Ë°•‰∏ÅÂÜÖÂÆπÔºâ|Longinus 1.0.0.2";
+	LPCSTR titlename = "ƒß≈Æ¡µ∞Æ»’º«|∞Æ¿ˆÀø∫Ûπ¨–≠ª·£®«ÎŒÕ¯¬Á÷±≤•±æ≤π∂°ƒ⁄»›£©|Longinus 1.0.0.2";
 	return ((PfuncCreateWindowExA)g_pOldCreateWindowExA)(dwExStyle, lpClassName, titlename, dwStyle, X, Y,
 		nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 }
@@ -230,7 +230,7 @@ FARPROC WINAPI NewGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 	return ((PfuncGetProcAddress)g_OldGetProcAddress)(hModule, lpProcName);
 }
 
-//ÊîπÂèòÂ≠ó‰Ωì
+//∏ƒ±‰◊÷ÃÂ
 void ChangeFace(HMODULE hModule, unit32 Offset, unit32 Size, char *Face)
 {
 	if (hModule == NULL)
@@ -247,8 +247,8 @@ void ChangeFace(HMODULE hModule, unit32 Offset, unit32 Size, char *Face)
 	}
 }
 
-//ËæπÁïåÊ£ÄÊµã
-//BH:cmp al,0x9F,È≠îÂ•≥:ÊêúFC
+//±ﬂΩÁºÏ≤‚
+//BH:cmp al,0x9F,ƒß≈Æ:À—FC
 void BorderPatch(HMODULE hModule, unit32 Offset, unit8 Border)
 {
 	//memcpy((void*)0x40511E, &Border, 1);
@@ -275,7 +275,7 @@ void BorderPatch(HMODULE hModule, unit32 Offset, unit8 Border)
 	}
 }
 
-//ÈÄâÊã©‰∏≠ÊñáÂ≠ó‰ΩìÔºåÈÖçÂêàCreateFontIndirectA
+//—°‘Ò÷–Œƒ◊÷ÃÂ£¨≈‰∫œCreateFontIndirectA
 void EnumFontFamiliesAPatch()
 {
 	VirtualProtect((void *)EnumFontFamiliesA_MemOffset, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
@@ -291,8 +291,8 @@ void GetSettings()
 	IsOpen.OpenCreateFontIndirectA = GetPrivateProfileIntW(L"Settings", L"CreateFontIndirectA", 0, iniPath);
 	IsOpen.OpenCreateFontA = GetPrivateProfileIntW(L"Settings", L"CreateFontA", 0, iniPath);
 	IsOpen.OpenMultiByteToWideChar = GetPrivateProfileIntW(L"Settings", L"MultiByteToWideChar", 0, iniPath);
-	IsOpen.OpenGetGlyphOutlineW = GetPrivateProfileIntW(L"Settings", L"GetGlyphOutlineW", 0, iniPath);
-	IsOpen.OpenGetGlyphOutlineA = GetPrivateProfileIntW(L"Settings", L"GetGlyphOutlineA", 0, iniPath);
+	IsOpen.OpenGetGlyphOutline = GetPrivateProfileIntW(L"Settings", L"GetGlyphOutline", 0, iniPath);
+	IsOpen.OpenCreateWindowExA = GetPrivateProfileIntW(L"Settings", L"CreateWindowExA", 0, iniPath);
 	IsOpen.OpenCreateFileA = GetPrivateProfileIntW(L"Settings", L"CreateFileA", 0, iniPath);
 	IsOpen.OpenCreateFileW = GetPrivateProfileIntW(L"Settings", L"CreateFileW", 0, iniPath);
 	IsOpen.OpenSetWindowTextA = GetPrivateProfileIntW(L"Settings", L"SetWindowTextA", 0, iniPath);
@@ -323,17 +323,9 @@ void GetSettings()
 		GetPrivateProfileStringW(L"EnumFontFamiliesA", L"MemOffset", NULL, buff, 50, iniPath);
 		EnumFontFamiliesA_MemOffset = CheckString(buff);
 	}
-	if (IsOpen.OpenGetGlyphOutlineA)
+	if (IsOpen.OpenGetGlyphOutline)
 	{
-		GetPrivateProfileStringW(L"GetGlyphOutlineA", L"TBL", L"", buff, MAX_PATH, iniPath);
-		FILE *tbl = _wfopen(buff, L"rb");
-		tbl_data = malloc(0xF000 * 2);
-		fread(tbl_data, 1, 0xF000 * 2, tbl);
-		fclose(tbl);
-	}
-	if (IsOpen.OpenGetGlyphOutlineW)
-	{
-		GetPrivateProfileStringW(L"GetGlyphOutlineW", L"TBL", L"", buff, MAX_PATH, iniPath);
+		GetPrivateProfileStringW(L"GetGlyphOutline", L"TBL", L"", buff, MAX_PATH, iniPath);
 		FILE *tbl = _wfopen(buff, L"rb");
 		tbl_data = malloc(0xF000 * 2);
 		fread(tbl_data, 1, 0xF000 * 2, tbl);
@@ -572,7 +564,7 @@ void GetSettings()
 	free(buff);
 }
 
-//ÂÆâË£ÖHook 
+//∞≤◊∞Hook 
 BOOL APIENTRY SetHook()
 {
 	//ChangeFace();
@@ -602,15 +594,23 @@ BOOL APIENTRY SetHook()
 		g_pOldCreateFileW = DetourFindFunction("kernel32.dll", "CreateFileW");
 		DetourAttach(&g_pOldCreateFileW, NewCreateFileW);
 	}
-	if (IsOpen.OpenGetGlyphOutlineW)
+	if (IsOpen.OpenGetGlyphOutline)
 	{
-		g_pOldGetGlyphOutlineW = DetourFindFunction("GDI32.dll", "GetGlyphOutline");
-		DetourAttach(&g_pOldGetGlyphOutlineW, NewGetGlyphOutlineW);
-	}
-	if (IsOpen.OpenGetGlyphOutlineA)
-	{
-		g_pOldGetGlyphOutlineA = DetourFindFunction("GDI32.dll", "GetGlyphOutlineA");
-		DetourAttach(&g_pOldGetGlyphOutlineA, NewGetGlyphOutlineA);
+		if (GetPrivateProfileIntW(L"GetGlyphOutline", L"Type", 0, iniPath) == 0)
+		{
+			g_pOldGetGlyphOutlineA = DetourFindFunction("GDI32.dll", "GetGlyphOutline");
+			DetourAttach(&g_pOldGetGlyphOutlineA, NewGetGlyphOutlineA);
+		}
+		else if (GetPrivateProfileIntW(L"GetGlyphOutline", L"Type", 0, iniPath) == 1)
+		{
+			g_pOldGetGlyphOutlineA = DetourFindFunction("GDI32.dll", "GetGlyphOutlineA");
+			DetourAttach(&g_pOldGetGlyphOutlineA, NewGetGlyphOutlineA);
+		}
+		else if (GetPrivateProfileIntW(L"GetGlyphOutline", L"Type", 0, iniPath) == 2)
+		{
+			g_pOldGetGlyphOutlineW = DetourFindFunction("GDI32.dll", "GetGlyphOutlineW");
+			DetourAttach(&g_pOldGetGlyphOutlineW, NewGetGlyphOutlineW);
+		}
 	}
 	if (IsOpen.OpenMultiByteToWideChar)
 	{
@@ -632,13 +632,16 @@ BOOL APIENTRY SetHook()
 		g_OldGetProcAddress = DetourFindFunction("kernel32.dll", "GetProcAddress");
 		DetourAttach(&g_OldGetProcAddress, NewGetProcAddress);
 	}
-	g_pOldCreateWindowExA = DetourFindFunction("USER32.dll", "CreateWindowExA");
-	DetourAttach(&g_pOldCreateWindowExA, NewCreateWindowExA);
+	if (IsOpen.OpenCreateWindowExA)
+	{
+		g_pOldCreateWindowExA = DetourFindFunction("USER32.dll", "CreateWindowExA");
+		DetourAttach(&g_pOldCreateWindowExA, NewCreateWindowExA);
+	}
 	LONG ret = DetourTransactionCommit();
 	return ret == NO_ERROR;
 }
 
-//Âç∏ËΩΩHook
+//–∂‘ÿHook
 BOOL APIENTRY DropHook()
 {
 	DetourTransactionBegin();
@@ -651,15 +654,15 @@ BOOL APIENTRY DropHook()
 		DetourDetach(&g_pOldCreateFileA, NewCreateFileA);
 	if (IsOpen.OpenCreateFileW)
 		DetourDetach(&g_pOldCreateFileW, NewCreateFileW);
-	if (IsOpen.OpenGetGlyphOutlineW)
+	if (IsOpen.OpenGetGlyphOutline)
 	{
 		free(tbl_data);
-		DetourDetach(&g_pOldGetGlyphOutlineW, NewGetGlyphOutlineW);
-	}
-	if (IsOpen.OpenGetGlyphOutlineA)
-	{
-		free(tbl_data);
-		DetourDetach(&g_pOldGetGlyphOutlineA, NewGetGlyphOutlineA);
+		if (GetPrivateProfileIntW(L"GetGlyphOutline", L"Type", 0, iniPath) == 0)
+			DetourDetach(&g_pOldGetGlyphOutlineA, NewGetGlyphOutlineA);
+		else if (GetPrivateProfileIntW(L"GetGlyphOutline", L"Type", 0, iniPath) == 1)
+			DetourDetach(&g_pOldGetGlyphOutlineA, NewGetGlyphOutlineA);
+		else if (GetPrivateProfileIntW(L"GetGlyphOutline", L"Type", 0, iniPath) == 2)
+			DetourDetach(&g_pOldGetGlyphOutlineW, NewGetGlyphOutlineW);
 	}
 	if (IsOpen.OpenMultiByteToWideChar)
 		DetourDetach(&g_pOldMultiByteToWideChar, NewMultiByteToWideChar);
@@ -669,7 +672,8 @@ BOOL APIENTRY DropHook()
 		DetourDetach(&g_pOldMessageBoxA, NewMessageBoxA);
 	if (IsOpen.OpenGetProcAddress)
 		DetourDetach(&g_OldGetProcAddress, NewGetProcAddress);
-	DetourDetach(&g_pOldCreateWindowExA, NewCreateWindowExA);
+	if(IsOpen.OpenCreateWindowExA)
+		DetourDetach(&g_pOldCreateWindowExA, NewCreateWindowExA);
 	LONG ret = DetourTransactionCommit();
 	return ret == NO_ERROR;
 }
