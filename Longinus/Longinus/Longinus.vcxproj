@@ -151,6 +151,7 @@
     <ClCompile Include="Longinus.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Longinus.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
