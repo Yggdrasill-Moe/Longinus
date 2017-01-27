@@ -1,9 +1,9 @@
 /*
-ÓÃÓÚÊµÏÖ¸Ä½øºóµÄNeXASÒıÇæ
-×ÔÖÆ×Ö¿âÓëGetGlyphOutline
-Ïà¼æÈİµÄºº»¯·½Ê½
+ç”¨äºå®ç°æ”¹è¿›åçš„NeXASå¼•æ“
+è‡ªåˆ¶å­—åº“ä¸GetGlyphOutline
+ç›¸å…¼å®¹çš„æ±‰åŒ–æ–¹å¼
 
-made by Yggdrasill£¨Darkness-TX & Destiny¤Î»ğºü£©
+made by Yggdrasillï¼ˆDarkness-TX & Destinyã®ç«ç‹ï¼‰
 2017.01.09
 */
 #include "Longinus.h"
@@ -115,7 +115,7 @@ typedef int (WINAPI *PfuncCreateWindowExA)(DWORD dwExStyle, LPCSTR lpClassName, 
 int WINAPI NewCreateWindowExA(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y,
 	int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 {
-	LPCSTR titlename = "Ä§Å®Áµ°®ÈÕ¼Ç|°®ÀöË¿ºó¹¬Ğ­»á£¨ÇëÎğÍøÂçÖ±²¥±¾²¹¶¡ÄÚÈİ£©|Longinus 1.0.0.2";
+	LPCSTR titlename = "é­”å¥³æ‹çˆ±æ—¥è®°|çˆ±ä¸½ä¸åå®«åä¼šï¼ˆè¯·å‹¿ç½‘ç»œç›´æ’­æœ¬è¡¥ä¸å†…å®¹ï¼‰|Longinus 1.0.0.2";
 	return ((PfuncCreateWindowExA)g_pOldCreateWindowExA)(dwExStyle, lpClassName, titlename, dwStyle, X, Y,
 		nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 }
@@ -230,7 +230,7 @@ FARPROC WINAPI NewGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 	return ((PfuncGetProcAddress)g_OldGetProcAddress)(hModule, lpProcName);
 }
 
-//¸Ä±ä×ÖÌå
+//æ”¹å˜å­—ä½“
 void ChangeFace(HMODULE hModule, unit32 Offset, unit32 Size, char *Face)
 {
 	if (hModule == NULL)
@@ -247,8 +247,8 @@ void ChangeFace(HMODULE hModule, unit32 Offset, unit32 Size, char *Face)
 	}
 }
 
-//±ß½ç¼ì²â
-//BH:cmp al,0x9F,Ä§Å®:ËÑFC
+//è¾¹ç•Œæ£€æµ‹
+//BH:cmp al,0x9F,é­”å¥³:æœFC
 void BorderPatch(HMODULE hModule, unit32 Offset, unit8 Border)
 {
 	//memcpy((void*)0x40511E, &Border, 1);
@@ -275,7 +275,7 @@ void BorderPatch(HMODULE hModule, unit32 Offset, unit8 Border)
 	}
 }
 
-//Ñ¡ÔñÖĞÎÄ×ÖÌå£¬ÅäºÏCreateFontIndirectA
+//é€‰æ‹©ä¸­æ–‡å­—ä½“ï¼Œé…åˆCreateFontIndirectA
 void EnumFontFamiliesAPatch()
 {
 	VirtualProtect((void *)EnumFontFamiliesA_MemOffset, 1, PAGE_EXECUTE_READWRITE, &oldProtect);
@@ -384,7 +384,7 @@ void GetSettings()
 		NodeMessageBoxA_CaptionReplace *cq;
 		cq = malloc(sizeof(NodeMessageBoxA_CaptionReplace));
 		MessageBoxA_CaptionReplace = cq;
-		for (DWORD i = 1; i <= MessageBoxA_TextCount; i++)
+		for (DWORD i = 1; i <= MessageBoxA_CaptionCount; i++)
 		{
 			NodeMessageBoxA_CaptionReplace *crow;
 			crow = malloc(sizeof(NodeMessageBoxA_CaptionReplace));
@@ -572,7 +572,7 @@ void GetSettings()
 	free(buff);
 }
 
-//°²×°Hook 
+//å®‰è£…Hook 
 BOOL APIENTRY SetHook()
 {
 	//ChangeFace();
@@ -638,7 +638,7 @@ BOOL APIENTRY SetHook()
 	return ret == NO_ERROR;
 }
 
-//Ğ¶ÔØHook
+//å¸è½½Hook
 BOOL APIENTRY DropHook()
 {
 	DetourTransactionBegin();
