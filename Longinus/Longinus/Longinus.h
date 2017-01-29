@@ -51,16 +51,16 @@ LinkMessageBoxA_CaptionReplace MessageBoxA_CaptionReplace;
 
 typedef struct CreateFileA_Replace_s
 {
-	char OldFileName[255];
-	char NewFileName[255];
+	char OldFileName[MAX_PATH];
+	char NewFileName[MAX_PATH];
 	struct CreateFileA_Replace_s *next;
 }NodeCreateFileA_Replace, *LinkCreateFileA_Replace;
 LinkCreateFileA_Replace CreateFileA_Replace;
 
 typedef struct CreateFileW_Replace_s
 {
-	wchar_t OldFileName[255];
-	wchar_t NewFileName[255];
+	wchar_t OldFileName[MAX_PATH];
+	wchar_t NewFileName[MAX_PATH];
 	struct CreateFileW_Replace_s *next;
 }NodeCreateFileW_Replace, *LinkCreateFileW_Replace;
 LinkCreateFileW_Replace CreateFileW_Replace;

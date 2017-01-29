@@ -72,7 +72,6 @@ typedef int (WINAPI *PfuncCreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess,
 int WINAPI NewCreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
 	LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
 {
-
 	LPCSTR filename = lpFileName;
 	NodeCreateFileA_Replace *q = CreateFileA_Replace;
 	while (q->next != NULL)
@@ -292,7 +291,7 @@ void GetSettings()
 	IsOpen.OpenCreateFontA = GetPrivateProfileIntW(L"Settings", L"CreateFontA", 0, iniPath);
 	IsOpen.OpenMultiByteToWideChar = GetPrivateProfileIntW(L"Settings", L"MultiByteToWideChar", 0, iniPath);
 	IsOpen.OpenGetGlyphOutline = GetPrivateProfileIntW(L"Settings", L"GetGlyphOutline", 0, iniPath);
-	IsOpen.OpenCreateWindowExA = GetPrivateProfileIntW(L"Settings", L"CreateWindowExA", 0, iniPath);
+	IsOpen.OpenCreateWindowExA = GetPrivateProfileIntW(L"Settings", L"CreateWindowExA", 1, iniPath);
 	IsOpen.OpenCreateFileA = GetPrivateProfileIntW(L"Settings", L"CreateFileA", 0, iniPath);
 	IsOpen.OpenCreateFileW = GetPrivateProfileIntW(L"Settings", L"CreateFileW", 0, iniPath);
 	IsOpen.OpenSetWindowTextA = GetPrivateProfileIntW(L"Settings", L"SetWindowTextA", 0, iniPath);
@@ -404,9 +403,23 @@ void GetSettings()
 			row->next = NULL;
 			wsprintfW(buff, L"OldFileName%d", i);
 			GetPrivateProfileStringW(L"CreateFileA", buff, NULL, buff, MAX_PATH, iniPath);
+			if (GetPrivateProfileIntW(L"CreateFileA", L"Use_Directory", 0, iniPath))
+			{
+				wchar_t *buff2 = malloc(MAX_PATH * 2);
+				wsprintfW(buff2, L"%ls\\%ls", dirPath, buff);
+				wsprintfW(buff, buff2);
+				free(buff2);
+			}
 			WideCharToMultiByte(CP_ACP, 0, buff, -1, row->OldFileName, MAX_PATH, NULL, NULL);
 			wsprintfW(buff, L"NewFileName%d", i);
 			GetPrivateProfileStringW(L"CreateFileA", buff, NULL, buff, MAX_PATH, iniPath);
+			if (GetPrivateProfileIntW(L"CreateFileA", L"Use_Directory", 0, iniPath))
+			{
+				wchar_t *buff2 = malloc(MAX_PATH * 2);
+				wsprintfW(buff2, L"%ls\\%ls", dirPath, buff);
+				wsprintfW(buff, buff2);
+				free(buff2);
+			}
 			WideCharToMultiByte(CP_ACP, 0, buff, -1, row->NewFileName, MAX_PATH, NULL, NULL);
 			q->next = row;
 			q = row;
@@ -424,9 +437,21 @@ void GetSettings()
 			row = malloc(sizeof(NodeCreateFileW_Replace));
 			row->next = NULL;
 			wsprintfW(buff, L"OldFileName%d", i);
-			GetPrivateProfileStringW(L"CreateFileW", buff, NULL, row->OldFileName, MAX_PATH, iniPath);
+			if (GetPrivateProfileIntW(L"CreateFileW", L"Use_Directory", 0, iniPath))
+			{
+				GetPrivateProfileStringW(L"CreateFileW", buff, NULL, buff, MAX_PATH, iniPath);
+				wsprintfW(row->OldFileName, L"%ls\\%ls", dirPath, buff);
+			}
+			else
+				GetPrivateProfileStringW(L"CreateFileW", buff, NULL, row->OldFileName, MAX_PATH, iniPath);
 			wsprintfW(buff, L"NewFileName%d", i);
-			GetPrivateProfileStringW(L"CreateFileW", buff, NULL, row->NewFileName, MAX_PATH, iniPath);
+			if (GetPrivateProfileIntW(L"CreateFileW", L"Use_Directory", 0, iniPath))
+			{
+				GetPrivateProfileStringW(L"CreateFileW", buff, NULL, buff, MAX_PATH, iniPath);
+				wsprintfW(row->NewFileName, L"%ls\\%ls", dirPath, buff);
+			}
+			else
+				GetPrivateProfileStringW(L"CreateFileW", buff, NULL, row->NewFileName, MAX_PATH, iniPath);
 			q->next = row;
 			q = row;
 		}
@@ -567,8 +592,6 @@ void GetSettings()
 //°²×°Hook 
 BOOL APIENTRY SetHook()
 {
-	//ChangeFace();
-
 	GetSettings();
 	if (IsOpen.OpenEnumFontFamiliesA)
 		EnumFontFamiliesAPatch();
