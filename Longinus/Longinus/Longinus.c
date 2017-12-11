@@ -12,14 +12,24 @@ PVOID g_pOldCreateFontIndirectA = NULL;
 typedef int(WINAPI *PfuncCreateFontIndirectA)(LOGFONTA *lplf);
 int WINAPI NewCreateFontIndirectA(LOGFONTA *lplf)
 {
-	lplf->lfCharSet = CreateFontIndirectA_CharSet;
+	lplf->lfCharSet = CreateFontIndirect_CharSet;
 	if (ChangeFace_All)
 	{
-		wchar_t buff[20];
-		GetPrivateProfileStringW(L"ChangeFace", L"Face", NULL, buff, 20, iniPath);
+		wchar_t buff[32];
+		GetPrivateProfileStringW(L"ChangeFace", L"Face", NULL, buff, 32, iniPath);
 		WideCharToMultiByte(CP_ACP, 0, buff, -1, lplf->lfFaceName , MAX_PATH, NULL, NULL);
 	}
 	return ((PfuncCreateFontIndirectA)g_pOldCreateFontIndirectA)(lplf);
+}
+
+PVOID g_pOldCreateFontIndirectW = NULL;
+typedef int(WINAPI *PfuncCreateFontIndirectW)(LOGFONTW *lplf);
+int WINAPI NewCreateFontIndirectW(LOGFONTW *lplf)
+{
+	lplf->lfCharSet = CreateFontIndirect_CharSet;
+	if (ChangeFace_All)
+		GetPrivateProfileStringW(L"ChangeFace", L"Face", NULL, lplf->lfFaceName, 32, iniPath);
+	return ((PfuncCreateFontIndirectW)g_pOldCreateFontIndirectW)(lplf);
 }
 
 PVOID g_pOldCreateFontA = NULL;
@@ -28,14 +38,27 @@ typedef int(WINAPI *PfuncCreateFontA)(int cHeight, int cWidth, int cEscapement, 
 int WINAPI NewCreateFontA(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight, DWORD bItalic,
 	DWORD bUnderline, DWORD bStrikeOut, DWORD iCharSet, DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality, DWORD iPitchAndFamily, LPCSTR pszFaceName)
 {
-	iCharSet = CreateFontA_CharSet;
+	iCharSet = CreateFont_CharSet;
 	if (ChangeFace_All)
 	{
-		wchar_t buff[20];
-		GetPrivateProfileStringW(L"ChangeFace", L"Face", NULL, buff, 20, iniPath);
+		wchar_t buff[32];
+		GetPrivateProfileStringW(L"ChangeFace", L"Face", NULL, buff, 32, iniPath);
 		WideCharToMultiByte(CP_ACP, 0, buff, -1, (char *)pszFaceName, MAX_PATH, NULL, NULL);
 	}
 	return ((PfuncCreateFontA)g_pOldCreateFontA)(cHeight, cWidth, cEscapement, cOrientation, cWeight, bItalic,
+		bUnderline, bStrikeOut, iCharSet, iOutPrecision, iClipPrecision, iQuality, iPitchAndFamily, pszFaceName);
+}
+
+PVOID g_pOldCreateFontW = NULL;
+typedef int(WINAPI *PfuncCreateFontW)(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight, DWORD bItalic,
+	DWORD bUnderline, DWORD bStrikeOut, DWORD iCharSet, DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality, DWORD iPitchAndFamily, LPCWSTR pszFaceName);
+int WINAPI NewCreateFontW(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight, DWORD bItalic,
+	DWORD bUnderline, DWORD bStrikeOut, DWORD iCharSet, DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality, DWORD iPitchAndFamily, LPCWSTR pszFaceName)
+{
+	iCharSet = CreateFont_CharSet;
+	if (ChangeFace_All)
+		GetPrivateProfileStringW(L"ChangeFace", L"Face", NULL, (WCHAR *)pszFaceName, 32, iniPath);
+	return ((PfuncCreateFontW)g_pOldCreateFontW)(cHeight, cWidth, cEscapement, cOrientation, cWeight, bItalic,
 		bUnderline, bStrikeOut, iCharSet, iOutPrecision, iClipPrecision, iQuality, iPitchAndFamily, pszFaceName);
 }
 
@@ -43,14 +66,24 @@ PVOID g_pOldEnumFontFamiliesExA = NULL;
 typedef int(WINAPI *PfuncEnumFontFamiliesExA)(HDC hdc, LPLOGFONTA lpLogfont, FONTENUMPROCA lpProc, LPARAM lParam, DWORD dwFlags);
 int WINAPI NewEnumFontFamiliesExA(HDC hdc, LPLOGFONTA lpLogfont, FONTENUMPROCA lpProc, LPARAM lParam, DWORD dwFlags)
 {
-	lpLogfont->lfCharSet = EnumFontFamiliesExA_CharSet;
+	lpLogfont->lfCharSet = EnumFontFamiliesEx_CharSet;
 	if (ChangeFace_All)
 	{
-		wchar_t buff[20];
-		GetPrivateProfileStringW(L"ChangeFace", L"Face", NULL, buff, 20, iniPath);
+		wchar_t buff[32];
+		GetPrivateProfileStringW(L"ChangeFace", L"Face", NULL, buff, 32, iniPath);
 		WideCharToMultiByte(CP_ACP, 0, buff, -1, lpLogfont->lfFaceName, MAX_PATH, NULL, NULL);
 	}
 	return ((PfuncEnumFontFamiliesExA)g_pOldEnumFontFamiliesExA)(hdc, lpLogfont, lpProc, lParam, dwFlags);
+}
+
+PVOID g_pOldEnumFontFamiliesExW = NULL;
+typedef int(WINAPI *PfuncEnumFontFamiliesExW)(HDC hdc, LPLOGFONTW lpLogfont, FONTENUMPROCW lpProc, LPARAM lParam, DWORD dwFlags);
+int WINAPI NewEnumFontFamiliesExW(HDC hdc, LPLOGFONTW lpLogfont, FONTENUMPROCW lpProc, LPARAM lParam, DWORD dwFlags)
+{
+	lpLogfont->lfCharSet = EnumFontFamiliesEx_CharSet;
+	if (ChangeFace_All)
+		GetPrivateProfileStringW(L"ChangeFace", L"Face", NULL, lpLogfont->lfFaceName, 32, iniPath);
+	return ((PfuncEnumFontFamiliesExW)g_pOldEnumFontFamiliesExW)(hdc, lpLogfont, lpProc, lParam, dwFlags);
 }
 
 PVOID g_pOldMultiByteToWideChar = NULL;
@@ -74,7 +107,7 @@ typedef int(WINAPI *PfuncGetGlyphOutlineW)(HDC hdc, UINT uChar, UINT fuFormat, L
 int WINAPI NewGetGlyphOutlineW(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer, MAT2* lpmat2)
 {
 	if (GetPrivateProfileIntW(L"GetGlyphOutline", L"TBL_MAPPED", 0, iniPath))
-		if (uChar < 0xA000 || uChar > 0xE000)
+		if (tbl_data[uChar] != 0)
 			uChar = tbl_data[uChar];
 	wchar_t buff[20];
 	GetPrivateProfileStringW(L"GetGlyphOutline", L"YF_CODING", NULL, buff, 20, iniPath);
@@ -83,29 +116,31 @@ int WINAPI NewGetGlyphOutlineW(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRIC
 		uChar = 0x266A;
 		if (cjBuffer == 0)
 		{
-			LOGFONTA logfont;
-			logfont.lfHeight = 30;
-			logfont.lfWidth = 0;
-			logfont.lfWeight = 0;
-			logfont.lfEscapement = 0;
-			logfont.lfOrientation = 0;
-			logfont.lfItalic = 0;
-			logfont.lfUnderline = 0;
-			logfont.lfStrikeOut = 0;
-			logfont.lfCharSet = DEFAULT_CHARSET;
-			logfont.lfOutPrecision = 0;
-			logfont.lfClipPrecision = 0;
-			logfont.lfQuality = 0;
-			logfont.lfPitchAndFamily = 0;
-			sprintf(logfont.lfFaceName, "%s", "Arial");
-			HFONT lfont = CreateFontIndirectA(&logfont);
-			LOGFONTA LogFont;
-			HFONT hOldFont = (HFONT)SelectObject(hdc, lfont);
-			GetObjectA(hOldFont, sizeof(LOGFONTA), &LogFont);
-			sprintf(LogFont.lfFaceName, "%s", "Arial");
-			hOldFont = CreateFontIndirectA(&LogFont);
-			lfont = (HFONT)SelectObject(hdc, hOldFont);
-			DeleteObject(lfont);
+			LOGFONTW newlogfont;
+			LOGFONTW oldlogfont;
+			HFONT newhFont;
+			HFONT oldhFont;
+			newlogfont.lfHeight = 30;
+			newlogfont.lfWidth = 0;
+			newlogfont.lfWeight = 0;
+			newlogfont.lfEscapement = 0;
+			newlogfont.lfOrientation = 0;
+			newlogfont.lfItalic = 0;
+			newlogfont.lfUnderline = 0;
+			newlogfont.lfStrikeOut = 0;
+			newlogfont.lfCharSet = DEFAULT_CHARSET;
+			newlogfont.lfOutPrecision = 0;
+			newlogfont.lfClipPrecision = 0;
+			newlogfont.lfQuality = 0;
+			newlogfont.lfPitchAndFamily = 0;
+			wsprintf(newlogfont.lfFaceName, L"%ls", L"Arial");
+			newhFont = CreateFontIndirectW(&newlogfont);
+			oldhFont = (HFONT)SelectObject(hdc, newhFont);
+			GetObjectW(oldhFont, sizeof(LOGFONTW), &oldlogfont);
+			wsprintf(oldlogfont.lfFaceName, L"%ls", L"Arial");
+			oldhFont = CreateFontIndirectW(&oldlogfont);
+			newhFont = (HFONT)SelectObject(hdc, oldhFont);
+			DeleteObject(newhFont);
 		}
 	}
 	return ((PfuncGetGlyphOutlineW)g_pOldGetGlyphOutlineW)(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
@@ -116,77 +151,41 @@ typedef int(WINAPI *PfuncGetGlyphOutlineA)(HDC hdc, UINT uChar, UINT fuFormat, L
 int WINAPI NewGetGlyphOutlineA(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer, MAT2* lpmat2)
 {
 	if (GetPrivateProfileIntW(L"GetGlyphOutline", L"TBL_MAPPED", 0, iniPath))
-	{
-		wchar_t buff[20];
-		GetPrivateProfileStringW(L"GetGlyphOutline", L"YF_CODING", NULL, buff, 20, iniPath);
-		if (uChar == CheckString(buff))
-		{
-			uChar = 0x266A;
-			if (cjBuffer == 0)
-			{
-				LOGFONTA logfont;
-				logfont.lfHeight = 24;
-				logfont.lfWidth = 0;
-				logfont.lfWeight = 0;
-				logfont.lfEscapement = 0;
-				logfont.lfOrientation = 0;
-				logfont.lfItalic = 0;
-				logfont.lfUnderline = 0;
-				logfont.lfStrikeOut = 0;
-				logfont.lfCharSet = DEFAULT_CHARSET;
-				logfont.lfOutPrecision = 0;
-				logfont.lfClipPrecision = 0;
-				logfont.lfQuality = 0;
-				logfont.lfPitchAndFamily = 0;
-				sprintf(logfont.lfFaceName, "%s", "Arial");
-				HFONT lfont = CreateFontIndirectA(&logfont);
-				LOGFONTA LogFont;
-				HFONT hOldFont = (HFONT)SelectObject(hdc, lfont);
-				GetObjectA(hOldFont, sizeof(LOGFONTA), &LogFont);
-				sprintf(LogFont.lfFaceName, "%s", "Arial");
-				hOldFont = CreateFontIndirectA(&LogFont);
-				lfont = (HFONT)SelectObject(hdc, hOldFont);
-				DeleteObject(lfont);
-				return GetGlyphOutlineW(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
-			}
-			else
-				return GetGlyphOutlineW(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
-		}
-		else if (uChar < 0xA000 || uChar>0xE000)
+		if (uChar < 0xA000 || uChar>0xE000)
 			uChar = tbl_data[uChar];
-	}
-	else
+	wchar_t buff[20];
+	GetPrivateProfileStringW(L"GetGlyphOutline", L"YF_CODING", NULL, buff, 20, iniPath);
+	if (uChar == CheckString(buff))
 	{
 		uChar = 0x266A;
 		if (cjBuffer == 0)
 		{
-			LOGFONTA logfont;
-			logfont.lfHeight = 24;
-			logfont.lfWidth = 0;
-			logfont.lfWeight = 0;
-			logfont.lfEscapement = 0;
-			logfont.lfOrientation = 0;
-			logfont.lfItalic = 0;
-			logfont.lfUnderline = 0;
-			logfont.lfStrikeOut = 0;
-			logfont.lfCharSet = DEFAULT_CHARSET;
-			logfont.lfOutPrecision = 0;
-			logfont.lfClipPrecision = 0;
-			logfont.lfQuality = 0;
-			logfont.lfPitchAndFamily = 0;
-			sprintf(logfont.lfFaceName, "%s", "Arial");
-			HFONT lfont = CreateFontIndirectA(&logfont);
-			LOGFONTA LogFont;
-			HFONT hOldFont = (HFONT)SelectObject(hdc, lfont);
-			GetObjectA(hOldFont, sizeof(LOGFONTA), &LogFont);
-			sprintf(LogFont.lfFaceName, "%s", "Arial");
-			hOldFont = CreateFontIndirectA(&LogFont);
-			lfont = (HFONT)SelectObject(hdc, hOldFont);
-			DeleteObject(lfont);
-			return GetGlyphOutlineW(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
+			LOGFONTA newlogfont;
+			LOGFONTA oldlogfont;
+			HFONT newhFont;
+			HFONT oldhFont;
+			newlogfont.lfHeight = 30;
+			newlogfont.lfWidth = 0;
+			newlogfont.lfWeight = 0;
+			newlogfont.lfEscapement = 0;
+			newlogfont.lfOrientation = 0;
+			newlogfont.lfItalic = 0;
+			newlogfont.lfUnderline = 0;
+			newlogfont.lfStrikeOut = 0;
+			newlogfont.lfCharSet = DEFAULT_CHARSET;
+			newlogfont.lfOutPrecision = 0;
+			newlogfont.lfClipPrecision = 0;
+			newlogfont.lfQuality = 0;
+			newlogfont.lfPitchAndFamily = 0;
+			sprintf(newlogfont.lfFaceName, "%s", "Arial");
+			newhFont = CreateFontIndirectA(&newlogfont);
+			oldhFont = (HFONT)SelectObject(hdc, newhFont);
+			GetObjectA(oldhFont, sizeof(LOGFONTW), &oldlogfont);
+			sprintf(oldlogfont.lfFaceName, "%s", "Arial");
+			oldhFont = CreateFontIndirectA(&oldlogfont);
+			newhFont = (HFONT)SelectObject(hdc, oldhFont);
+			DeleteObject(newhFont);
 		}
-		else
-			return GetGlyphOutlineW(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
 	}
 	return ((PfuncGetGlyphOutlineA)g_pOldGetGlyphOutlineA)(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
 }
@@ -239,7 +238,7 @@ typedef int(WINAPI *PfuncCreateWindowExA)(DWORD dwExStyle, LPCSTR lpClassName, L
 int WINAPI NewCreateWindowExA(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y,
 	int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 {
-	LPCSTR titlename = "Longinus 1.0.0.2";
+	LPCSTR titlename = "Longinus EXE 1.0.0.2|Longinus DLL 1.2.0.0";
 	return ((PfuncCreateWindowExA)g_pOldCreateWindowExA)(dwExStyle, lpClassName, titlename, dwStyle, X, Y,
 		nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 }
@@ -412,8 +411,8 @@ void GetSettings()
 	GetCurrentDirectoryW(MAX_PATH, dirPath);
 	wsprintfW(iniPath, L"%ls\\%ls", dirPath, L"Longinus.ini");
 	GetPrivateProfileStringW(L"FileName", L"EXE", L"", exePath, MAX_PATH, iniPath);
-	IsOpen.OpenCreateFontIndirectA = GetPrivateProfileIntW(L"Settings", L"CreateFontIndirectA", 0, iniPath);
-	IsOpen.OpenCreateFontA = GetPrivateProfileIntW(L"Settings", L"CreateFontA", 0, iniPath);
+	IsOpen.OpenCreateFontIndirect = GetPrivateProfileIntW(L"Settings", L"CreateFontIndirect", 0, iniPath);
+	IsOpen.OpenCreateFont = GetPrivateProfileIntW(L"Settings", L"CreateFont", 0, iniPath);
 	IsOpen.OpenMultiByteToWideChar = GetPrivateProfileIntW(L"Settings", L"MultiByteToWideChar", 0, iniPath);
 	IsOpen.OpenWideCharToMultiByte = GetPrivateProfileIntW(L"Settings", L"WideCharToMultiByte", 0, iniPath);
 	IsOpen.OpenGetGlyphOutline = GetPrivateProfileIntW(L"Settings", L"GetGlyphOutline", 0, iniPath);
@@ -424,18 +423,18 @@ void GetSettings()
 	IsOpen.OpenMessageBoxA = GetPrivateProfileIntW(L"Settings", L"MessageBoxA", 0, iniPath);
 	IsOpen.OpenGetProcAddress = GetPrivateProfileIntW(L"Settings", L"GetProcAddress", 0, iniPath);
 	IsOpen.OpenEnumFontFamiliesA = GetPrivateProfileIntW(L"Settings", L"EnumFontFamiliesA", 0, iniPath);
-	IsOpen.OpenEnumFontFamiliesExA = GetPrivateProfileIntW(L"Settings", L"EnumFontFamiliesExA", 0, iniPath);
+	IsOpen.OpenEnumFontFamiliesEx = GetPrivateProfileIntW(L"Settings", L"EnumFontFamiliesEx", 0, iniPath);
 	IsOpen.OpenBorderPatch = GetPrivateProfileIntW(L"Settings", L"BorderPatch", 0, iniPath);
 	IsOpen.OpenChangeFace = GetPrivateProfileIntW(L"Settings", L"ChangeFace", 0, iniPath);
-	if (IsOpen.OpenCreateFontIndirectA)
+	if (IsOpen.OpenCreateFontIndirect)
 	{
-		GetPrivateProfileStringW(L"CreateFontIndirectA", L"CharSet", L"0x86", buff, 50, iniPath);
-		CreateFontIndirectA_CharSet = (BYTE)CheckString(buff);
+		GetPrivateProfileStringW(L"CreateFontIndirect", L"CharSet", L"0x86", buff, 50, iniPath);
+		CreateFontIndirect_CharSet = (BYTE)CheckString(buff);
 	}
-	if (IsOpen.OpenCreateFontA)
+	if (IsOpen.OpenCreateFont)
 	{
-		GetPrivateProfileStringW(L"CreateFontA", L"CharSet", L"0x86", buff, 50, iniPath);
-		CreateFontA_CharSet = (BYTE)CheckString(buff);
+		GetPrivateProfileStringW(L"CreateFont", L"CharSet", L"0x86", buff, 50, iniPath);
+		CreateFont_CharSet = (BYTE)CheckString(buff);
 	}
 	if (IsOpen.OpenMultiByteToWideChar)
 	{
@@ -447,10 +446,10 @@ void GetSettings()
 		GetPrivateProfileStringW(L"WideCharToMultiByte", L"CodePage", L"936", buff, 50, iniPath);
 		WideCharToMultiByte_CodePage = CheckString(buff);
 	}
-	if (IsOpen.OpenEnumFontFamiliesExA)
+	if (IsOpen.OpenEnumFontFamiliesEx)
 	{
-		GetPrivateProfileStringW(L"EnumFontFamiliesExA", L"CharSet", L"0x86", buff, 50, iniPath);
-		EnumFontFamiliesExA_CharSet = (BYTE)CheckString(buff);
+		GetPrivateProfileStringW(L"EnumFontFamiliesEx", L"CharSet", L"0x86", buff, 50, iniPath);
+		EnumFontFamiliesEx_CharSet = (BYTE)CheckString(buff);
 	}
 	if (IsOpen.OpenEnumFontFamiliesA)
 	{
@@ -470,8 +469,8 @@ void GetSettings()
 				exit(0);
 			}
 			FILE *tbl = _wfopen(buff, L"rb");
-			tbl_data = malloc(0xF000 * 2);
-			fread(tbl_data, 1, 0xF000 * 2, tbl);
+			tbl_data = malloc(0xFF00 * 2);
+			fread(tbl_data, 1, 0xFF00 * 2, tbl);
 			fclose(tbl);
 		}
 	}
@@ -742,20 +741,65 @@ BOOL APIENTRY SetHook()
 		EnumFontFamiliesAPatch();
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
-	if (IsOpen.OpenCreateFontIndirectA)
+	if (IsOpen.OpenCreateFontIndirect)
 	{
-		g_pOldCreateFontIndirectA = DetourFindFunction("GDI32.dll", "CreateFontIndirectA");
-		DetourAttach(&g_pOldCreateFontIndirectA, NewCreateFontIndirectA);
+		if (GetPrivateProfileIntW(L"CreateFontIndirect", L"Mode", 0, iniPath) == 0)
+		{
+			g_pOldCreateFontIndirectA = DetourFindFunction("GDI32.dll", "CreateFontIndirectA");
+			DetourAttach(&g_pOldCreateFontIndirectA, NewCreateFontIndirectA);
+		}
+		if (GetPrivateProfileIntW(L"CreateFontIndirect", L"Mode", 0, iniPath) == 1)
+		{
+			g_pOldCreateFontIndirectW = DetourFindFunction("GDI32.dll", "CreateFontIndirectW");
+			DetourAttach(&g_pOldCreateFontIndirectW, NewCreateFontIndirectW);
+		}
+		if (GetPrivateProfileIntW(L"CreateFontIndirect", L"Mode", 0, iniPath) == 2)
+		{
+			g_pOldCreateFontIndirectA = DetourFindFunction("GDI32.dll", "CreateFontIndirectA");
+			DetourAttach(&g_pOldCreateFontIndirectA, NewCreateFontIndirectA);
+			g_pOldCreateFontIndirectW = DetourFindFunction("GDI32.dll", "CreateFontIndirectW");
+			DetourAttach(&g_pOldCreateFontIndirectW, NewCreateFontIndirectW);
+		}
 	}
-	if (IsOpen.OpenCreateFontA)
+	if (IsOpen.OpenCreateFont)
 	{
-		g_pOldCreateFontA = DetourFindFunction("GDI32.dll", "CreateFontA");
-		DetourAttach(&g_pOldCreateFontA, NewCreateFontA);
+		if (GetPrivateProfileIntW(L"CreateFont", L"Mode", 0, iniPath) == 0)
+		{
+			g_pOldCreateFontA = DetourFindFunction("GDI32.dll", "CreateFontA");
+			DetourAttach(&g_pOldCreateFontA, NewCreateFontA);
+		}
+		if (GetPrivateProfileIntW(L"CreateFont", L"Mode", 0, iniPath) == 1)
+		{
+			g_pOldCreateFontW = DetourFindFunction("GDI32.dll", "CreateFontW");
+			DetourAttach(&g_pOldCreateFontW, NewCreateFontW);
+		}
+		if (GetPrivateProfileIntW(L"CreateFont", L"Mode", 0, iniPath) == 2)
+		{
+			g_pOldCreateFontA = DetourFindFunction("GDI32.dll", "CreateFontA");
+			DetourAttach(&g_pOldCreateFontA, NewCreateFontA);
+			g_pOldCreateFontW = DetourFindFunction("GDI32.dll", "CreateFontW");
+			DetourAttach(&g_pOldCreateFontW, NewCreateFontW);
+		}
 	}
-	if (IsOpen.OpenEnumFontFamiliesExA)
+	if (IsOpen.OpenEnumFontFamiliesEx)
 	{
-		g_pOldEnumFontFamiliesExA = DetourFindFunction("GDI32.dll", "EnumFontFamiliesExA");
-		DetourAttach(&g_pOldEnumFontFamiliesExA, NewEnumFontFamiliesExA);
+		if (GetPrivateProfileIntW(L"EnumFontFamiliesEx", L"Mode", 0, iniPath) == 0)
+		{
+			g_pOldEnumFontFamiliesExA = DetourFindFunction("GDI32.dll", "EnumFontFamiliesExA");
+			DetourAttach(&g_pOldEnumFontFamiliesExA, NewEnumFontFamiliesExA);
+		}
+		if (GetPrivateProfileIntW(L"EnumFontFamiliesEx", L"Mode", 0, iniPath) == 1)
+		{
+			g_pOldEnumFontFamiliesExW = DetourFindFunction("GDI32.dll", "EnumFontFamiliesExW");
+			DetourAttach(&g_pOldEnumFontFamiliesExW, NewEnumFontFamiliesExW);
+		}
+		if (GetPrivateProfileIntW(L"EnumFontFamiliesEx", L"Mode", 0, iniPath) == 2)
+		{
+			g_pOldEnumFontFamiliesExA = DetourFindFunction("GDI32.dll", "EnumFontFamiliesExA");
+			DetourAttach(&g_pOldEnumFontFamiliesExA, NewEnumFontFamiliesExA);
+			g_pOldEnumFontFamiliesExW = DetourFindFunction("GDI32.dll", "EnumFontFamiliesExW");
+			DetourAttach(&g_pOldEnumFontFamiliesExW, NewEnumFontFamiliesExW);
+		}
 	}
 	if (IsOpen.OpenCreateFileA)
 	{
@@ -824,12 +868,42 @@ BOOL APIENTRY DropHook()
 {
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
-	if (IsOpen.OpenCreateFontIndirectA)
-		DetourDetach(&g_pOldCreateFontIndirectA, NewCreateFontIndirectA);
-	if (IsOpen.OpenCreateFontA)
-		DetourDetach(&g_pOldCreateFontA, NewCreateFontA);
-	if (IsOpen.OpenEnumFontFamiliesExA)
-		DetourDetach(&g_pOldEnumFontFamiliesExA, NewEnumFontFamiliesExA);
+	if (IsOpen.OpenCreateFontIndirect)
+	{
+		if (GetPrivateProfileIntW(L"CreateFontIndirect", L"Mode", 0, iniPath) == 0)
+			DetourDetach(&g_pOldCreateFontIndirectA, NewCreateFontIndirectA);
+		if (GetPrivateProfileIntW(L"CreateFontIndirect", L"Mode", 0, iniPath) == 1)
+			DetourDetach(&g_pOldCreateFontIndirectW, NewCreateFontIndirectW);
+		if (GetPrivateProfileIntW(L"CreateFontIndirect", L"Mode", 0, iniPath) == 2)
+		{
+			DetourDetach(&g_pOldCreateFontIndirectA, NewCreateFontIndirectA);
+			DetourDetach(&g_pOldCreateFontIndirectW, NewCreateFontIndirectW);
+		}
+	}
+	if (IsOpen.OpenCreateFont)
+	{
+		if (GetPrivateProfileIntW(L"CreateFont", L"Mode", 0, iniPath) == 0)
+			DetourDetach(&g_pOldCreateFontA, NewCreateFontA);
+		if (GetPrivateProfileIntW(L"CreateFont", L"Mode", 0, iniPath) == 1)
+			DetourDetach(&g_pOldCreateFontW, NewCreateFontW);
+		if (GetPrivateProfileIntW(L"CreateFont", L"Mode", 0, iniPath) == 2)
+		{
+			DetourDetach(&g_pOldCreateFontA, NewCreateFontA);
+			DetourDetach(&g_pOldCreateFontW, NewCreateFontW);
+		}
+	}
+	if (IsOpen.OpenEnumFontFamiliesEx)
+	{
+		if (GetPrivateProfileIntW(L"EnumFontFamiliesEx", L"Mode", 0, iniPath) == 0)
+			DetourDetach(&g_pOldEnumFontFamiliesExA, NewEnumFontFamiliesExA);
+		if (GetPrivateProfileIntW(L"EnumFontFamiliesEx", L"Mode", 0, iniPath) == 1)
+			DetourDetach(&g_pOldEnumFontFamiliesExW, NewEnumFontFamiliesExW);
+		if (GetPrivateProfileIntW(L"EnumFontFamiliesEx", L"Mode", 0, iniPath) == 2)
+		{
+			DetourDetach(&g_pOldEnumFontFamiliesExA, NewEnumFontFamiliesExA);
+			DetourDetach(&g_pOldEnumFontFamiliesExW, NewEnumFontFamiliesExW);
+		}
+	}
 	if (IsOpen.OpenCreateFileA)
 		DetourDetach(&g_pOldCreateFileA, NewCreateFileA);
 	if (IsOpen.OpenCreateFileW)

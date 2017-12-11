@@ -10,8 +10,8 @@ typedef unsigned int   unit32;
 
 struct IsOpen_s
 {
-	BOOL OpenCreateFontIndirectA;
-	BOOL OpenCreateFontA;
+	BOOL OpenCreateFontIndirect;
+	BOOL OpenCreateFont;
 	BOOL OpenMultiByteToWideChar;
 	BOOL OpenWideCharToMultiByte;
 	BOOL OpenGetGlyphOutline;
@@ -22,7 +22,7 @@ struct IsOpen_s
 	BOOL OpenCreateWindowExA;
 	BOOL OpenGetProcAddress;
 	BOOL OpenEnumFontFamiliesA;
-	BOOL OpenEnumFontFamiliesExA;
+	BOOL OpenEnumFontFamiliesEx;
 	BOOL OpenBorderPatch;
 	BOOL OpenChangeFace;
 }IsOpen;
@@ -88,11 +88,11 @@ wchar_t exePath[MAX_PATH];
 wchar_t iniPath[MAX_PATH];
 wchar_t dirPath[MAX_PATH];
 
-BYTE CreateFontIndirectA_CharSet;
-BYTE CreateFontA_CharSet;
+BYTE CreateFontIndirect_CharSet;
+BYTE CreateFont_CharSet;
 DWORD MultiByteToWideChar_CodePage;
 DWORD WideCharToMultiByte_CodePage;
-BYTE EnumFontFamiliesExA_CharSet;
+BYTE EnumFontFamiliesEx_CharSet;
 BYTE EnumFontFamiliesA_CharSet;
 DWORD EnumFontFamiliesA_MemOffset;
 BOOL First_Face_Patch = FALSE;
