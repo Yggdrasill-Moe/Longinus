@@ -9,7 +9,7 @@ made by Yggdrasill（Darkness-TX & Destinyの火狐）
 #include "Longinus.h"
 
 PVOID g_pOldCreateFontIndirectA = NULL;
-typedef int (WINAPI *PfuncCreateFontIndirectA)(LOGFONTA *lplf);
+typedef int(WINAPI *PfuncCreateFontIndirectA)(LOGFONTA *lplf);
 int WINAPI NewCreateFontIndirectA(LOGFONTA *lplf)
 {
 	lplf->lfCharSet = CreateFontIndirectA_CharSet;
@@ -23,7 +23,7 @@ int WINAPI NewCreateFontIndirectA(LOGFONTA *lplf)
 }
 
 PVOID g_pOldCreateFontA = NULL;
-typedef int (WINAPI *PfuncCreateFontA)(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight, DWORD bItalic,
+typedef int(WINAPI *PfuncCreateFontA)(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight, DWORD bItalic,
 	DWORD bUnderline, DWORD bStrikeOut, DWORD iCharSet, DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality, DWORD iPitchAndFamily, LPCSTR pszFaceName);
 int WINAPI NewCreateFontA(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight, DWORD bItalic,
 	DWORD bUnderline, DWORD bStrikeOut, DWORD iCharSet, DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality, DWORD iPitchAndFamily, LPCSTR pszFaceName)
@@ -39,35 +39,160 @@ int WINAPI NewCreateFontA(int cHeight, int cWidth, int cEscapement, int cOrienta
 		bUnderline, bStrikeOut, iCharSet, iOutPrecision, iClipPrecision, iQuality, iPitchAndFamily, pszFaceName);
 }
 
+PVOID g_pOldEnumFontFamiliesExA = NULL;
+typedef int(WINAPI *PfuncEnumFontFamiliesExA)(HDC hdc, LPLOGFONTA lpLogfont, FONTENUMPROCA lpProc, LPARAM lParam, DWORD dwFlags);
+int WINAPI NewEnumFontFamiliesExA(HDC hdc, LPLOGFONTA lpLogfont, FONTENUMPROCA lpProc, LPARAM lParam, DWORD dwFlags)
+{
+	lpLogfont->lfCharSet = EnumFontFamiliesExA_CharSet;
+	if (ChangeFace_All)
+	{
+		wchar_t buff[20];
+		GetPrivateProfileStringW(L"ChangeFace", L"Face", NULL, buff, 20, iniPath);
+		WideCharToMultiByte(CP_ACP, 0, buff, -1, lpLogfont->lfFaceName, MAX_PATH, NULL, NULL);
+	}
+	return ((PfuncEnumFontFamiliesExA)g_pOldEnumFontFamiliesExA)(hdc, lpLogfont, lpProc, lParam, dwFlags);
+}
+
 PVOID g_pOldMultiByteToWideChar = NULL;
-typedef int (WINAPI *PfuncMultiByteToWideChar)(UINT CodePage, DWORD dwFlags, LPCCH lpMultiByteStr, int cbMultiByte, LPWSTR lpWideCharStr, int cchWideChar);
+typedef int(WINAPI *PfuncMultiByteToWideChar)(UINT CodePage, DWORD dwFlags, LPCCH lpMultiByteStr, int cbMultiByte, LPWSTR lpWideCharStr, int cchWideChar);
 int WINAPI NewMultiByteToWideChar(UINT CodePage, DWORD dwFlags, LPCCH lpMultiByteStr, int cbMultiByte, LPWSTR lpWideCharStr, int cchWideChar)
 {
-	if (CodePage == 932)
-		CodePage = MultiByteToWideChar_CodePage;
+	CodePage = MultiByteToWideChar_CodePage;
 	return ((PfuncMultiByteToWideChar)g_pOldMultiByteToWideChar)(CodePage, dwFlags, lpMultiByteStr, cbMultiByte, lpWideCharStr, cchWideChar);
 }
 
+PVOID g_pOldWideCharToMultiByte = NULL;
+typedef int(WINAPI *PfuncWideCharToMultiByte)(UINT CodePage, DWORD dwFlags, LPCWSTR lpWideCharStr, int cchWideChar, LPSTR lpMultiByteStr, int cbMultiByte, LPCSTR lpDefaultChar, LPBOOL lpUsedDefaultChar);
+int WINAPI NewWideCharToMultiByte(UINT CodePage, DWORD dwFlags, LPCWSTR lpWideCharStr, int cchWideChar, LPSTR lpMultiByteStr, int cbMultiByte, LPCSTR lpDefaultChar, LPBOOL lpUsedDefaultChar)
+{
+	CodePage = WideCharToMultiByte_CodePage;
+	return ((PfuncWideCharToMultiByte)g_pOldWideCharToMultiByte)(CodePage, dwFlags, lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte, lpDefaultChar, lpUsedDefaultChar);
+}
+
 PVOID g_pOldGetGlyphOutlineW = NULL;
-typedef int (WINAPI *PfuncGetGlyphOutlineW)(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer, MAT2 *lpmat2);
+typedef int(WINAPI *PfuncGetGlyphOutlineW)(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer, MAT2 *lpmat2);
 int WINAPI NewGetGlyphOutlineW(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer, MAT2* lpmat2)
 {
-	if (uChar < 0xA000)
-		uChar = tbl_data[uChar];
+	if (GetPrivateProfileIntW(L"GetGlyphOutline", L"TBL_MAPPED", 0, iniPath))
+		if (uChar < 0xA000 || uChar > 0xE000)
+			uChar = tbl_data[uChar];
+	wchar_t buff[20];
+	GetPrivateProfileStringW(L"GetGlyphOutline", L"YF_CODING", NULL, buff, 20, iniPath);
+	if (uChar == CheckString(buff))
+	{
+		uChar = 0x266A;
+		if (cjBuffer == 0)
+		{
+			LOGFONTA logfont;
+			logfont.lfHeight = 30;
+			logfont.lfWidth = 0;
+			logfont.lfWeight = 0;
+			logfont.lfEscapement = 0;
+			logfont.lfOrientation = 0;
+			logfont.lfItalic = 0;
+			logfont.lfUnderline = 0;
+			logfont.lfStrikeOut = 0;
+			logfont.lfCharSet = DEFAULT_CHARSET;
+			logfont.lfOutPrecision = 0;
+			logfont.lfClipPrecision = 0;
+			logfont.lfQuality = 0;
+			logfont.lfPitchAndFamily = 0;
+			sprintf(logfont.lfFaceName, "%s", "Arial");
+			HFONT lfont = CreateFontIndirectA(&logfont);
+			LOGFONTA LogFont;
+			HFONT hOldFont = (HFONT)SelectObject(hdc, lfont);
+			GetObjectA(hOldFont, sizeof(LOGFONTA), &LogFont);
+			sprintf(LogFont.lfFaceName, "%s", "Arial");
+			hOldFont = CreateFontIndirectA(&LogFont);
+			lfont = (HFONT)SelectObject(hdc, hOldFont);
+			DeleteObject(lfont);
+		}
+	}
 	return ((PfuncGetGlyphOutlineW)g_pOldGetGlyphOutlineW)(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
 }
 
 PVOID g_pOldGetGlyphOutlineA = NULL;
-typedef int (WINAPI *PfuncGetGlyphOutlineA)(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer, MAT2 *lpmat2);
+typedef int(WINAPI *PfuncGetGlyphOutlineA)(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer, MAT2 *lpmat2);
 int WINAPI NewGetGlyphOutlineA(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRICS lpgm, DWORD cjBuffer, LPVOID pvBuffer, MAT2* lpmat2)
 {
-	if (uChar < 0xA000)
-		uChar = tbl_data[uChar];
+	if (GetPrivateProfileIntW(L"GetGlyphOutline", L"TBL_MAPPED", 0, iniPath))
+	{
+		wchar_t buff[20];
+		GetPrivateProfileStringW(L"GetGlyphOutline", L"YF_CODING", NULL, buff, 20, iniPath);
+		if (uChar == CheckString(buff))
+		{
+			uChar = 0x266A;
+			if (cjBuffer == 0)
+			{
+				LOGFONTA logfont;
+				logfont.lfHeight = 24;
+				logfont.lfWidth = 0;
+				logfont.lfWeight = 0;
+				logfont.lfEscapement = 0;
+				logfont.lfOrientation = 0;
+				logfont.lfItalic = 0;
+				logfont.lfUnderline = 0;
+				logfont.lfStrikeOut = 0;
+				logfont.lfCharSet = DEFAULT_CHARSET;
+				logfont.lfOutPrecision = 0;
+				logfont.lfClipPrecision = 0;
+				logfont.lfQuality = 0;
+				logfont.lfPitchAndFamily = 0;
+				sprintf(logfont.lfFaceName, "%s", "Arial");
+				HFONT lfont = CreateFontIndirectA(&logfont);
+				LOGFONTA LogFont;
+				HFONT hOldFont = (HFONT)SelectObject(hdc, lfont);
+				GetObjectA(hOldFont, sizeof(LOGFONTA), &LogFont);
+				sprintf(LogFont.lfFaceName, "%s", "Arial");
+				hOldFont = CreateFontIndirectA(&LogFont);
+				lfont = (HFONT)SelectObject(hdc, hOldFont);
+				DeleteObject(lfont);
+				return GetGlyphOutlineW(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
+			}
+			else
+				return GetGlyphOutlineW(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
+		}
+		else if (uChar < 0xA000 || uChar>0xE000)
+			uChar = tbl_data[uChar];
+	}
+	else
+	{
+		uChar = 0x266A;
+		if (cjBuffer == 0)
+		{
+			LOGFONTA logfont;
+			logfont.lfHeight = 24;
+			logfont.lfWidth = 0;
+			logfont.lfWeight = 0;
+			logfont.lfEscapement = 0;
+			logfont.lfOrientation = 0;
+			logfont.lfItalic = 0;
+			logfont.lfUnderline = 0;
+			logfont.lfStrikeOut = 0;
+			logfont.lfCharSet = DEFAULT_CHARSET;
+			logfont.lfOutPrecision = 0;
+			logfont.lfClipPrecision = 0;
+			logfont.lfQuality = 0;
+			logfont.lfPitchAndFamily = 0;
+			sprintf(logfont.lfFaceName, "%s", "Arial");
+			HFONT lfont = CreateFontIndirectA(&logfont);
+			LOGFONTA LogFont;
+			HFONT hOldFont = (HFONT)SelectObject(hdc, lfont);
+			GetObjectA(hOldFont, sizeof(LOGFONTA), &LogFont);
+			sprintf(LogFont.lfFaceName, "%s", "Arial");
+			hOldFont = CreateFontIndirectA(&LogFont);
+			lfont = (HFONT)SelectObject(hdc, hOldFont);
+			DeleteObject(lfont);
+			return GetGlyphOutlineW(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
+		}
+		else
+			return GetGlyphOutlineW(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
+	}
 	return ((PfuncGetGlyphOutlineA)g_pOldGetGlyphOutlineA)(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
 }
 
 PVOID g_pOldCreateFileA = NULL;
-typedef int (WINAPI *PfuncCreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, 
+typedef int(WINAPI *PfuncCreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
 	LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
 int WINAPI NewCreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
 	LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
@@ -88,7 +213,7 @@ int WINAPI NewCreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShar
 }
 
 PVOID g_pOldCreateFileW = NULL;
-typedef int (WINAPI *PfuncCreateFileW)(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
+typedef int(WINAPI *PfuncCreateFileW)(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
 	LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
 int WINAPI NewCreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
 	LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
@@ -109,18 +234,18 @@ int WINAPI NewCreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwSha
 }
 
 PVOID g_pOldCreateWindowExA = NULL;
-typedef int (WINAPI *PfuncCreateWindowExA)(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y,
+typedef int(WINAPI *PfuncCreateWindowExA)(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y,
 	int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam);
 int WINAPI NewCreateWindowExA(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y,
 	int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 {
-	LPCSTR titlename = "魔女恋爱日记|爱丽丝后宫协会（请勿网络直播本补丁内容）|Longinus 1.0.0.2";
+	LPCSTR titlename = "Longinus 1.0.0.2";
 	return ((PfuncCreateWindowExA)g_pOldCreateWindowExA)(dwExStyle, lpClassName, titlename, dwStyle, X, Y,
 		nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 }
 
 PVOID g_pOldSetWindowTextA = NULL;
-typedef int (WINAPI *PfuncSetWindowTextA)(HWND hWnd, LPCSTR lpString);
+typedef int(WINAPI *PfuncSetWindowTextA)(HWND hWnd, LPCSTR lpString);
 int WINAPI NewSetWindowTextA(HWND hWnd, LPCSTR lpString)
 {
 	LPCSTR textname = lpString;
@@ -138,7 +263,7 @@ int WINAPI NewSetWindowTextA(HWND hWnd, LPCSTR lpString)
 }
 
 PVOID g_pOldMessageBoxA = NULL;
-typedef int (WINAPI *PfuncMessageBoxA)(HWND hWnd, LPCSTR lpString);
+typedef int(WINAPI *PfuncMessageBoxA)(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType);
 int WINAPI NewMessageBoxA(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType)
 {
 	LPCSTR titlename = lpCaption;
@@ -290,6 +415,7 @@ void GetSettings()
 	IsOpen.OpenCreateFontIndirectA = GetPrivateProfileIntW(L"Settings", L"CreateFontIndirectA", 0, iniPath);
 	IsOpen.OpenCreateFontA = GetPrivateProfileIntW(L"Settings", L"CreateFontA", 0, iniPath);
 	IsOpen.OpenMultiByteToWideChar = GetPrivateProfileIntW(L"Settings", L"MultiByteToWideChar", 0, iniPath);
+	IsOpen.OpenWideCharToMultiByte = GetPrivateProfileIntW(L"Settings", L"WideCharToMultiByte", 0, iniPath);
 	IsOpen.OpenGetGlyphOutline = GetPrivateProfileIntW(L"Settings", L"GetGlyphOutline", 0, iniPath);
 	IsOpen.OpenCreateWindowExA = GetPrivateProfileIntW(L"Settings", L"CreateWindowExA", 1, iniPath);
 	IsOpen.OpenCreateFileA = GetPrivateProfileIntW(L"Settings", L"CreateFileA", 0, iniPath);
@@ -298,6 +424,7 @@ void GetSettings()
 	IsOpen.OpenMessageBoxA = GetPrivateProfileIntW(L"Settings", L"MessageBoxA", 0, iniPath);
 	IsOpen.OpenGetProcAddress = GetPrivateProfileIntW(L"Settings", L"GetProcAddress", 0, iniPath);
 	IsOpen.OpenEnumFontFamiliesA = GetPrivateProfileIntW(L"Settings", L"EnumFontFamiliesA", 0, iniPath);
+	IsOpen.OpenEnumFontFamiliesExA = GetPrivateProfileIntW(L"Settings", L"EnumFontFamiliesExA", 0, iniPath);
 	IsOpen.OpenBorderPatch = GetPrivateProfileIntW(L"Settings", L"BorderPatch", 0, iniPath);
 	IsOpen.OpenChangeFace = GetPrivateProfileIntW(L"Settings", L"ChangeFace", 0, iniPath);
 	if (IsOpen.OpenCreateFontIndirectA)
@@ -315,6 +442,16 @@ void GetSettings()
 		GetPrivateProfileStringW(L"MultiByteToWideChar", L"CodePage", L"936", buff, 50, iniPath);
 		MultiByteToWideChar_CodePage = CheckString(buff);
 	}
+	if (IsOpen.OpenWideCharToMultiByte)
+	{
+		GetPrivateProfileStringW(L"WideCharToMultiByte", L"CodePage", L"936", buff, 50, iniPath);
+		WideCharToMultiByte_CodePage = CheckString(buff);
+	}
+	if (IsOpen.OpenEnumFontFamiliesExA)
+	{
+		GetPrivateProfileStringW(L"EnumFontFamiliesExA", L"CharSet", L"0x86", buff, 50, iniPath);
+		EnumFontFamiliesExA_CharSet = (BYTE)CheckString(buff);
+	}
 	if (IsOpen.OpenEnumFontFamiliesA)
 	{
 		GetPrivateProfileStringW(L"EnumFontFamiliesA", L"CharSet", L"0x86", buff, 50, iniPath);
@@ -324,11 +461,19 @@ void GetSettings()
 	}
 	if (IsOpen.OpenGetGlyphOutline)
 	{
-		GetPrivateProfileStringW(L"GetGlyphOutline", L"TBL", L"", buff, MAX_PATH, iniPath);
-		FILE *tbl = _wfopen(buff, L"rb");
-		tbl_data = malloc(0xF000 * 2);
-		fread(tbl_data, 1, 0xF000 * 2, tbl);
-		fclose(tbl);
+		if (GetPrivateProfileIntW(L"GetGlyphOutline", L"TBL_MAPPED", 0, iniPath))
+		{
+			GetPrivateProfileStringW(L"GetGlyphOutline", L"TBL", L"", buff, MAX_PATH, iniPath);
+			if (buff == L"")
+			{
+				MessageBoxW(NULL, L"未指定TBL文件名，请于GetGlyphOutline下添加TBL配置！", L"错误", MB_OK);
+				exit(0);
+			}
+			FILE *tbl = _wfopen(buff, L"rb");
+			tbl_data = malloc(0xF000 * 2);
+			fread(tbl_data, 1, 0xF000 * 2, tbl);
+			fclose(tbl);
+		}
 	}
 	if (IsOpen.OpenSetWindowTextA)
 	{
@@ -607,6 +752,11 @@ BOOL APIENTRY SetHook()
 		g_pOldCreateFontA = DetourFindFunction("GDI32.dll", "CreateFontA");
 		DetourAttach(&g_pOldCreateFontA, NewCreateFontA);
 	}
+	if (IsOpen.OpenEnumFontFamiliesExA)
+	{
+		g_pOldEnumFontFamiliesExA = DetourFindFunction("GDI32.dll", "EnumFontFamiliesExA");
+		DetourAttach(&g_pOldEnumFontFamiliesExA, NewEnumFontFamiliesExA);
+	}
 	if (IsOpen.OpenCreateFileA)
 	{
 		g_pOldCreateFileA = DetourFindFunction("kernel32.dll", "CreateFileA");
@@ -639,6 +789,11 @@ BOOL APIENTRY SetHook()
 	{
 		g_pOldMultiByteToWideChar = DetourFindFunction("kernel32.dll", "MultiByteToWideChar");
 		DetourAttach(&g_pOldMultiByteToWideChar, NewMultiByteToWideChar);
+	}
+	if (IsOpen.OpenWideCharToMultiByte)
+	{
+		g_pOldWideCharToMultiByte = DetourFindFunction("kernel32.dll", "WideCharToMultiByte");
+		DetourAttach(&g_pOldWideCharToMultiByte, NewWideCharToMultiByte);
 	}
 	if (IsOpen.OpenSetWindowTextA)
 	{
@@ -673,6 +828,8 @@ BOOL APIENTRY DropHook()
 		DetourDetach(&g_pOldCreateFontIndirectA, NewCreateFontIndirectA);
 	if (IsOpen.OpenCreateFontA)
 		DetourDetach(&g_pOldCreateFontA, NewCreateFontA);
+	if (IsOpen.OpenEnumFontFamiliesExA)
+		DetourDetach(&g_pOldEnumFontFamiliesExA, NewEnumFontFamiliesExA);
 	if (IsOpen.OpenCreateFileA)
 		DetourDetach(&g_pOldCreateFileA, NewCreateFileA);
 	if (IsOpen.OpenCreateFileW)
@@ -689,6 +846,8 @@ BOOL APIENTRY DropHook()
 	}
 	if (IsOpen.OpenMultiByteToWideChar)
 		DetourDetach(&g_pOldMultiByteToWideChar, NewMultiByteToWideChar);
+	if (IsOpen.OpenWideCharToMultiByte)
+		DetourDetach(&g_pOldWideCharToMultiByte, NewWideCharToMultiByte);
 	if (IsOpen.OpenSetWindowTextA)
 		DetourDetach(&g_pOldSetWindowTextA, NewSetWindowTextA);
 	if (IsOpen.OpenMessageBoxA)

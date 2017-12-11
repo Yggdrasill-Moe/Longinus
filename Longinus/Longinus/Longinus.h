@@ -13,6 +13,7 @@ struct IsOpen_s
 	BOOL OpenCreateFontIndirectA;
 	BOOL OpenCreateFontA;
 	BOOL OpenMultiByteToWideChar;
+	BOOL OpenWideCharToMultiByte;
 	BOOL OpenGetGlyphOutline;
 	BOOL OpenCreateFileA;
 	BOOL OpenCreateFileW;
@@ -21,6 +22,7 @@ struct IsOpen_s
 	BOOL OpenCreateWindowExA;
 	BOOL OpenGetProcAddress;
 	BOOL OpenEnumFontFamiliesA;
+	BOOL OpenEnumFontFamiliesExA;
 	BOOL OpenBorderPatch;
 	BOOL OpenChangeFace;
 }IsOpen;
@@ -89,6 +91,8 @@ wchar_t dirPath[MAX_PATH];
 BYTE CreateFontIndirectA_CharSet;
 BYTE CreateFontA_CharSet;
 DWORD MultiByteToWideChar_CodePage;
+DWORD WideCharToMultiByte_CodePage;
+BYTE EnumFontFamiliesExA_CharSet;
 BYTE EnumFontFamiliesA_CharSet;
 DWORD EnumFontFamiliesA_MemOffset;
 BOOL First_Face_Patch = FALSE;
