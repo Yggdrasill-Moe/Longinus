@@ -19,12 +19,13 @@ struct IsOpen_s
 	BOOL OpenCreateFileW;
 	BOOL OpenSetWindowTextA;
 	BOOL OpenMessageBoxA;
-	BOOL OpenCreateWindowExA;
+	BOOL OpenCreateWindowEx;
 	BOOL OpenGetProcAddress;
 	BOOL OpenEnumFontFamiliesA;
 	BOOL OpenEnumFontFamiliesEx;
 	BOOL OpenBorderPatch;
 	BOOL OpenChangeFace;
+	BOOL OpenlstrcpyW;
 }IsOpen;
 
 typedef struct SetWindowTextA_Replace_s
@@ -66,6 +67,14 @@ typedef struct CreateFileW_Replace_s
 	struct CreateFileW_Replace_s *next;
 }NodeCreateFileW_Replace, *LinkCreateFileW_Replace;
 LinkCreateFileW_Replace CreateFileW_Replace;
+//汉化的话lpString2的长度应该不会超MAX_PATH吧。。。。
+typedef struct lstrcpyW_Replace_s
+{
+	wchar_t OldlpString2[MAX_PATH];
+	wchar_t NewlpString2[MAX_PATH];
+	struct lstrcpyW_Replace_s *next;
+}NodelstrcpyW_Replace, *LinklstrcpyW_Replace;
+LinklstrcpyW_Replace lstrcpyW_Replace;
 
 typedef struct Border_Patch_s
 {
