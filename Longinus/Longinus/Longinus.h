@@ -23,6 +23,8 @@ struct IsOpen_s
 	BOOL OpenGetProcAddress;
 	BOOL OpenEnumFontFamiliesA;
 	BOOL OpenEnumFontFamiliesEx;
+	BOOL OpenGetDriveTypeW;
+	BOOL OpenGetVolumeInformationW;
 	BOOL OpenBorderPatch;
 	BOOL OpenChangeFace;
 	BOOL OpenlstrcpyW;

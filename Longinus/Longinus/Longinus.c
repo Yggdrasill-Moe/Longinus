@@ -323,6 +323,23 @@ int WINAPI NewMessageBoxA(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType
 	return ((PfuncMessageBoxA)g_pOldMessageBoxA)(hWnd, textname, titlename, uType);
 }
 
+PVOID g_pOldGetDriveTypeW = NULL;
+typedef UINT(WINAPI *PfuncGetDriveTypeW)(LPCWSTR lpRootPathName);
+UINT WINAPI NewGetDriveTypeW(LPCWSTR lpRootPathName)
+{
+	return DRIVE_CDROM;
+}
+
+PVOID g_pOldGetVolumeInformationW = NULL;
+typedef BOOL(WINAPI *PfuncGetVolumeInformationW)(LPCWSTR lpRootPathName, LPWSTR lpVolumeNameBuffer, DWORD nVolumeNameSize,
+ LPDWORD lpVolumeSerialNumber, LPDWORD lpMaximumComponentLength, LPDWORD lpFileSystemFlags, LPWSTR lpFileSystemNameBuffer, DWORD nFileSystemNameSize);
+BOOL WINAPI NewGetVolumeInformationW(LPCWSTR lpRootPathName, LPWSTR lpVolumeNameBuffer, DWORD nVolumeNameSize,
+	LPDWORD lpVolumeSerialNumber, LPDWORD lpMaximumComponentLength, LPDWORD lpFileSystemFlags, LPWSTR lpFileSystemNameBuffer, DWORD nFileSystemNameSize)
+{
+	GetPrivateProfileStringW(L"GetVolumeInformationW", L"VolumeName", L"", lpVolumeNameBuffer, nVolumeNameSize, iniPath);
+	return TRUE;
+}
+
 PVOID g_pOldGetProcAddress = NULL;
 typedef FARPROC(WINAPI *PfuncGetProcAddress)(HMODULE hModule, LPCSTR lpProcName);
 FARPROC WINAPI NewGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
@@ -460,6 +477,8 @@ void GetSettings()
 	IsOpen.OpenBorderPatch = GetPrivateProfileIntW(L"Settings", L"BorderPatch", 0, iniPath);
 	IsOpen.OpenChangeFace = GetPrivateProfileIntW(L"Settings", L"ChangeFace", 0, iniPath);
 	IsOpen.OpenlstrcpyW = GetPrivateProfileIntW(L"Settings", L"lstrcpyW", 0, iniPath);
+	IsOpen.OpenGetDriveTypeW = GetPrivateProfileIntW(L"Settings", L"GetDriveTypeW", 0, iniPath);
+	IsOpen.OpenGetVolumeInformationW = GetPrivateProfileIntW(L"Settings", L"GetVolumeInformationW", 0, iniPath);
 	if (IsOpen.OpenCreateFontIndirect)
 	{
 		GetPrivateProfileStringW(L"CreateFontIndirect", L"CharSet", L"0x86", buff, 50, iniPath);
@@ -869,6 +888,16 @@ BOOL APIENTRY SetHook()
 		g_pOldlstrcpyW = DetourFindFunction("kernel32.dll", "lstrcpyW");
 		DetourAttach(&g_pOldlstrcpyW, NewlstrcpyW);
 	}
+	if (IsOpen.OpenGetDriveTypeW)
+	{
+		g_pOldGetDriveTypeW = DetourFindFunction("kernel32.dll", "GetDriveTypeW");
+		DetourAttach(&g_pOldGetDriveTypeW, NewGetDriveTypeW);
+	}
+	if (IsOpen.OpenGetVolumeInformationW)
+	{
+		g_pOldGetVolumeInformationW = DetourFindFunction("kernel32.dll", "GetVolumeInformationW");
+		DetourAttach(&g_pOldGetVolumeInformationW, NewGetVolumeInformationW);
+	}
 	if (IsOpen.OpenGetGlyphOutline)
 	{
 		if (GetPrivateProfileIntW(L"GetGlyphOutline", L"Type", 0, iniPath) == 0)
@@ -976,6 +1005,10 @@ BOOL APIENTRY DropHook()
 		DetourDetach(&g_pOldCreateFileW, NewCreateFileW);
 	if (IsOpen.OpenlstrcpyW)
 		DetourDetach(&g_pOldlstrcpyW, NewlstrcpyW);
+	if (IsOpen.OpenGetDriveTypeW)
+		DetourDetach(&g_pOldGetDriveTypeW, NewGetDriveTypeW);
+	if(IsOpen.OpenGetVolumeInformationW)
+		DetourDetach(&g_pOldGetVolumeInformationW, NewGetVolumeInformationW);
 	if (IsOpen.OpenGetGlyphOutline)
 	{
 		free(tbl_data);
