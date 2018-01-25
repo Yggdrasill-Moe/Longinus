@@ -6,6 +6,7 @@
 made by Yggdrasill£¨Darkness-TX & Destiny¤Î»ðºü£©
 2017.01.09
 */
+#include "Longinus_dat.h"
 #include "Longinus.h"
 
 PVOID g_pOldCreateFontIndirectA = NULL;
@@ -241,6 +242,27 @@ int WINAPI NewlstrcpyW(LPWSTR lpString1,  LPCWSTR lpString2)
 {
 	LPWSTR lpString[MAX_PATH];
 	wcscpy((wchar_t *)lpString, lpString2);
+	if (IsOpen.OpenLonginusFile)
+	{
+		unit32 hash = BKDRhash((wchar_t *)lpString);
+		unit8 *p;
+		p = (unit8 *)&hash + 3;
+		NodeIndex_Data *iq = Index_Data;
+		while (iq->next != NULL)
+		{
+			iq = iq->next;
+			if (*p == iq->index)
+			{
+				NodeHash_Data *hq = iq->hash_data;
+				while (hq != NULL)
+				{
+					if (hq->hash == hash)
+						return ((PfunclstrcpyW)g_pOldlstrcpyW)(lpString1, hq->str_data);
+					hq = hq->next;
+				}
+			}
+		}
+	}
 	NodelstrcpyW_Replace *q = lstrcpyW_Replace;
 	while (q->next != NULL)
 	{
@@ -260,7 +282,7 @@ typedef int(WINAPI *PfuncCreateWindowExA)(DWORD dwExStyle, LPCSTR lpClassName, L
 int WINAPI NewCreateWindowExA(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y,
 	int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 {
-	LPCSTR titlename = "Longinus EXE 1.0.0.2|Longinus DLL 1.2.0.0";
+	LPCSTR titlename = "Longinus EXE 1.0.0.2|Longinus DLL 1.3.0.0";
 	return ((PfuncCreateWindowExA)g_pOldCreateWindowExA)(dwExStyle, lpClassName, titlename, dwStyle, X, Y,
 		nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 }
@@ -271,7 +293,7 @@ typedef int(WINAPI *PfuncCreateWindowExW)(DWORD dwExStyle, LPCWSTR lpClassName, 
 int WINAPI NewCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y,
 	int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 {
-	LPCWSTR titlename = L"Longinus EXE 1.0.0.2|Longinus DLL 1.2.0.0";
+	LPCWSTR titlename = L"Longinus EXE 1.0.0.2|Longinus DLL 1.3.0.0";
 	return ((PfuncCreateWindowExW)g_pOldCreateWindowExW)(dwExStyle, lpClassName, titlename, dwStyle, X, Y,
 		nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 }
@@ -479,6 +501,12 @@ void GetSettings()
 	IsOpen.OpenlstrcpyW = GetPrivateProfileIntW(L"Settings", L"lstrcpyW", 0, iniPath);
 	IsOpen.OpenGetDriveTypeW = GetPrivateProfileIntW(L"Settings", L"GetDriveTypeW", 0, iniPath);
 	IsOpen.OpenGetVolumeInformationW = GetPrivateProfileIntW(L"Settings", L"GetVolumeInformationW", 0, iniPath);
+	IsOpen.OpenLonginusFile = GetPrivateProfileIntW(L"Settings", L"Longinus_File", 0, iniPath);
+	if (IsOpen.OpenLonginusFile)
+	{
+		if (!Read_Dat(L"Longinus.dat"))
+			exit(0);
+	}
 	if (IsOpen.OpenCreateFontIndirect)
 	{
 		GetPrivateProfileStringW(L"CreateFontIndirect", L"CharSet", L"0x86", buff, 50, iniPath);

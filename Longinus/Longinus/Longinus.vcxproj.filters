@@ -18,12 +18,18 @@
     <ClCompile Include="Longinus.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Longinus_dat.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Longinus.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Longinus_dat.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

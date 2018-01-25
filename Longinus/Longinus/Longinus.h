@@ -10,6 +10,7 @@ typedef unsigned int   unit32;
 
 struct IsOpen_s
 {
+	BOOL OpenLonginusFile;
 	BOOL OpenCreateFontIndirect;
 	BOOL OpenCreateFont;
 	BOOL OpenMultiByteToWideChar;
