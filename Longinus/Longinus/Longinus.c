@@ -276,6 +276,47 @@ int WINAPI NewlstrcpyW(LPWSTR lpString1,  LPCWSTR lpString2)
 	return ((PfunclstrcpyW)g_pOldlstrcpyW)(lpString1, (LPCWSTR)lpString);
 }
 
+PVOID g_pOldTextOutW = NULL;
+typedef int(WINAPI *PfuncTextOutW)(HDC hdc, int x, int y, LPCWSTR lpString, int c);
+int WINAPI NewTextOutW(HDC hdc, int x, int y, LPCWSTR lpString, int c)
+{
+	LPWSTR String[MAX_PATH];
+	wcscpy((wchar_t *)String, lpString);
+	/*
+	if (IsOpen.OpenLonginusFile)
+	{
+		unit32 hash = BKDRhash((wchar_t *)String);
+		unit8 *p;
+		p = (unit8 *)&hash + 3;
+		NodeIndex_Data *iq = Index_Data;
+		while (iq->next != NULL)
+		{
+			iq = iq->next;
+			if (*p == iq->index)
+			{
+				NodeHash_Data *hq = iq->hash_data;
+				while (hq != NULL)
+				{
+					if (hq->hash == hash)
+						return ((PfuncTextOutW)g_pOldTextOutW)(hdc, x, y, hq->str_data, wcslen(hq->str_data));
+					hq = hq->next;
+				}
+			}
+		}
+	}*/
+	NodeTextOutW_Replace *q = TextOutW_Replace;
+	while (q->next != NULL)
+	{
+		q = q->next;
+		if (wcsncmp((wchar_t *)String, q->OldlpString, c) == 0)
+		{
+			wcscpy((wchar_t *)String, q->NewlpString);
+			break;
+		}
+	}
+	return ((PfuncTextOutW)g_pOldTextOutW)(hdc, x, y, String, wcslen(String));
+}
+
 PVOID g_pOldCreateWindowExA = NULL;
 typedef int(WINAPI *PfuncCreateWindowExA)(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y,
 	int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam);
@@ -499,6 +540,7 @@ void GetSettings()
 	IsOpen.OpenBorderPatch = GetPrivateProfileIntW(L"Settings", L"BorderPatch", 0, iniPath);
 	IsOpen.OpenChangeFace = GetPrivateProfileIntW(L"Settings", L"ChangeFace", 0, iniPath);
 	IsOpen.OpenlstrcpyW = GetPrivateProfileIntW(L"Settings", L"lstrcpyW", 0, iniPath);
+	IsOpen.OpenTextOutW = GetPrivateProfileIntW(L"Settings", L"TextOutW", 0, iniPath);
 	IsOpen.OpenGetDriveTypeW = GetPrivateProfileIntW(L"Settings", L"GetDriveTypeW", 0, iniPath);
 	IsOpen.OpenGetVolumeInformationW = GetPrivateProfileIntW(L"Settings", L"GetVolumeInformationW", 0, iniPath);
 	IsOpen.OpenLonginusFile = GetPrivateProfileIntW(L"Settings", L"Longinus_File", 0, iniPath);
@@ -696,6 +738,25 @@ void GetSettings()
 			GetPrivateProfileStringW(L"lstrcpyW", buff, NULL, row->OldlpString2, MAX_PATH, iniPath);
 			wsprintfW(buff, L"NewlpString%d", i);
 			GetPrivateProfileStringW(L"lstrcpyW", buff, NULL, row->NewlpString2, MAX_PATH, iniPath);
+			q->next = row;
+			q = row;
+		}
+	}
+	if (IsOpen.OpenTextOutW)
+	{
+		DWORD TextOutW_Count = GetPrivateProfileIntW(L"TextOutW", L"Count", 0, iniPath);
+		NodeTextOutW_Replace *q;
+		q = malloc(sizeof(NodeTextOutW_Replace));
+		TextOutW_Replace = q;
+		for (DWORD i = 1; i <= TextOutW_Count; i++)
+		{
+			NodeTextOutW_Replace *row;
+			row = malloc(sizeof(NodeTextOutW_Replace));
+			row->next = NULL;
+			wsprintfW(buff, L"OldlpString%d", i);
+			GetPrivateProfileStringW(L"TextOutW", buff, NULL, row->OldlpString, MAX_PATH, iniPath);
+			wsprintfW(buff, L"NewlpString%d", i);
+			GetPrivateProfileStringW(L"TextOutW", buff, NULL, row->NewlpString, MAX_PATH, iniPath);
 			q->next = row;
 			q = row;
 		}
@@ -916,6 +977,11 @@ BOOL APIENTRY SetHook()
 		g_pOldlstrcpyW = DetourFindFunction("kernel32.dll", "lstrcpyW");
 		DetourAttach(&g_pOldlstrcpyW, NewlstrcpyW);
 	}
+	if (IsOpen.OpenTextOutW)
+	{
+		g_pOldTextOutW = DetourFindFunction("GDI32.dll", "TextOutW");
+		DetourAttach(&g_pOldTextOutW, NewTextOutW);
+	}
 	if (IsOpen.OpenGetDriveTypeW)
 	{
 		g_pOldGetDriveTypeW = DetourFindFunction("kernel32.dll", "GetDriveTypeW");
@@ -1033,6 +1099,8 @@ BOOL APIENTRY DropHook()
 		DetourDetach(&g_pOldCreateFileW, NewCreateFileW);
 	if (IsOpen.OpenlstrcpyW)
 		DetourDetach(&g_pOldlstrcpyW, NewlstrcpyW);
+	if (IsOpen.OpenTextOutW)
+		DetourDetach(&g_pOldTextOutW, NewTextOutW);
 	if (IsOpen.OpenGetDriveTypeW)
 		DetourDetach(&g_pOldGetDriveTypeW, NewGetDriveTypeW);
 	if(IsOpen.OpenGetVolumeInformationW)

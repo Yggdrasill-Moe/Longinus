@@ -29,6 +29,7 @@ struct IsOpen_s
 	BOOL OpenBorderPatch;
 	BOOL OpenChangeFace;
 	BOOL OpenlstrcpyW;
+	BOOL OpenTextOutW;
 }IsOpen;
 
 typedef struct SetWindowTextA_Replace_s
@@ -78,6 +79,14 @@ typedef struct lstrcpyW_Replace_s
 	struct lstrcpyW_Replace_s *next;
 }NodelstrcpyW_Replace, *LinklstrcpyW_Replace;
 LinklstrcpyW_Replace lstrcpyW_Replace;
+
+typedef struct TextOutW_Replace_s
+{
+	wchar_t OldlpString[MAX_PATH];
+	wchar_t NewlpString[MAX_PATH];
+	struct TextOutW_Replace_s *next;
+}NodeTextOutW_Replace, *LinkTextOutW_Replace;
+LinkTextOutW_Replace TextOutW_Replace;
 
 typedef struct Border_Patch_s
 {
