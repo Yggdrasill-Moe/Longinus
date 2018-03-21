@@ -19,16 +19,20 @@ struct IsOpen_s
 	BOOL OpenCreateFileA;
 	BOOL OpenCreateFileW;
 	BOOL OpenSetWindowTextA;
+	BOOL OpenSetWindowTextW;
 	BOOL OpenMessageBoxA;
+	BOOL OpenMessageBoxW;
 	BOOL OpenCreateWindowEx;
 	BOOL OpenGetProcAddress;
 	BOOL OpenEnumFontFamiliesA;
 	BOOL OpenEnumFontFamiliesEx;
-	BOOL OpenGetDriveTypeW;
+	BOOL OpenGetDriveType;
 	BOOL OpenGetVolumeInformationW;
+	BOOL OpenFindFirstFile;
 	BOOL OpenBorderPatch;
 	BOOL OpenChangeFace;
 	BOOL OpenlstrcpyW;
+	BOOL OpenTextOutA;
 	BOOL OpenTextOutW;
 }IsOpen;
 
@@ -39,6 +43,14 @@ typedef struct SetWindowTextA_Replace_s
 	struct SetWindowTextA_Replace_s *next;
 }NodeSetWindowTextA_Replace, *LinkSetWindowTextA_Replace;
 LinkSetWindowTextA_Replace SetWindowTextA_Replace;
+
+typedef struct SetWindowTextW_Replace_s
+{
+	wchar_t OldString[255];
+	wchar_t NewString[255];
+	struct SetWindowTextW_Replace_s *next;
+}NodeSetWindowTextW_Replace, *LinkSetWindowTextW_Replace;
+LinkSetWindowTextW_Replace SetWindowTextW_Replace;
 
 typedef struct MessageBoxA_TextReplace_s
 {
@@ -55,6 +67,22 @@ typedef struct MessageBoxA_CaptionReplace_s
 	struct MessageBoxA_CaptionReplace_s *next;
 }NodeMessageBoxA_CaptionReplace, *LinkMessageBoxA_CaptionReplace;
 LinkMessageBoxA_CaptionReplace MessageBoxA_CaptionReplace;
+
+typedef struct MessageBoxW_TextReplace_s
+{
+	wchar_t OldString[255];
+	wchar_t NewString[255];
+	struct MessageBoxW_TextReplace_s *next;
+}NodeMessageBoxW_TextReplace, *LinkMessageBoxW_TextReplace;
+LinkMessageBoxW_TextReplace MessageBoxW_TextReplace;
+
+typedef struct MessageBoxW_CaptionReplace_s
+{
+	wchar_t OldString[255];
+	wchar_t NewString[255];
+	struct MessageBoxW_CaptionReplace_s *next;
+}NodeMessageBoxW_CaptionReplace, *LinkMessageBoxW_CaptionReplace;
+LinkMessageBoxW_CaptionReplace MessageBoxW_CaptionReplace;
 
 typedef struct CreateFileA_Replace_s
 {
@@ -79,6 +107,14 @@ typedef struct lstrcpyW_Replace_s
 	struct lstrcpyW_Replace_s *next;
 }NodelstrcpyW_Replace, *LinklstrcpyW_Replace;
 LinklstrcpyW_Replace lstrcpyW_Replace;
+
+typedef struct TextOutA_Replace_s
+{
+	unit8 OldlpString[MAX_PATH];
+	unit8 NewlpString[MAX_PATH];
+	struct TextOutA_Replace_s *next;
+}NodeTextOutA_Replace, *LinkTextOutA_Replace;
+LinkTextOutA_Replace TextOutA_Replace;
 
 typedef struct TextOutW_Replace_s
 {

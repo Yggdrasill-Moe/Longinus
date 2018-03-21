@@ -57,8 +57,13 @@ int WINAPI NewCreateFontW(int cHeight, int cWidth, int cEscapement, int cOrienta
 	DWORD bUnderline, DWORD bStrikeOut, DWORD iCharSet, DWORD iOutPrecision, DWORD iClipPrecision, DWORD iQuality, DWORD iPitchAndFamily, LPCWSTR pszFaceName)
 {
 	iCharSet = CreateFont_CharSet;
+	wchar_t fn[32];
 	if (ChangeFace_All)
-		GetPrivateProfileStringW(L"ChangeFace", L"Face", NULL, (WCHAR *)pszFaceName, 32, iniPath);
+	{
+		GetPrivateProfileStringW(L"ChangeFace", L"Face", NULL, fn, 32, iniPath);
+		return ((PfuncCreateFontW)g_pOldCreateFontW)(cHeight, cWidth, cEscapement, cOrientation, cWeight, bItalic,
+			bUnderline, bStrikeOut, iCharSet, iOutPrecision, iClipPrecision, iQuality, iPitchAndFamily, fn);
+	}
 	return ((PfuncCreateFontW)g_pOldCreateFontW)(cHeight, cWidth, cEscapement, cOrientation, cWeight, bItalic,
 		bUnderline, bStrikeOut, iCharSet, iOutPrecision, iClipPrecision, iQuality, iPitchAndFamily, pszFaceName);
 }
@@ -91,7 +96,7 @@ PVOID g_pOldMultiByteToWideChar = NULL;
 typedef int(WINAPI *PfuncMultiByteToWideChar)(UINT CodePage, DWORD dwFlags, LPCCH lpMultiByteStr, int cbMultiByte, LPWSTR lpWideCharStr, int cchWideChar);
 int WINAPI NewMultiByteToWideChar(UINT CodePage, DWORD dwFlags, LPCCH lpMultiByteStr, int cbMultiByte, LPWSTR lpWideCharStr, int cchWideChar)
 {
-	if (CodePage == 932)
+	if (CodePage == 932 || CodePage == CP_ACP)
 		CodePage = MultiByteToWideChar_CodePage;
 	return ((PfuncMultiByteToWideChar)g_pOldMultiByteToWideChar)(CodePage, dwFlags, lpMultiByteStr, cbMultiByte, lpWideCharStr, cchWideChar);
 }
@@ -100,7 +105,7 @@ PVOID g_pOldWideCharToMultiByte = NULL;
 typedef int(WINAPI *PfuncWideCharToMultiByte)(UINT CodePage, DWORD dwFlags, LPCWSTR lpWideCharStr, int cchWideChar, LPSTR lpMultiByteStr, int cbMultiByte, LPCSTR lpDefaultChar, LPBOOL lpUsedDefaultChar);
 int WINAPI NewWideCharToMultiByte(UINT CodePage, DWORD dwFlags, LPCWSTR lpWideCharStr, int cchWideChar, LPSTR lpMultiByteStr, int cbMultiByte, LPCSTR lpDefaultChar, LPBOOL lpUsedDefaultChar)
 {
-	if (CodePage == 932)
+	if (CodePage == 932 || CodePage == CP_ACP)
 		CodePage = WideCharToMultiByte_CodePage;
 	return ((PfuncWideCharToMultiByte)g_pOldWideCharToMultiByte)(CodePage, dwFlags, lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte, lpDefaultChar, lpUsedDefaultChar);
 }
@@ -276,12 +281,48 @@ int WINAPI NewlstrcpyW(LPWSTR lpString1,  LPCWSTR lpString2)
 	return ((PfunclstrcpyW)g_pOldlstrcpyW)(lpString1, (LPCWSTR)lpString);
 }
 
+PVOID g_pOldTextOutA = NULL;
+typedef int(WINAPI *PfuncTextOutA)(HDC hdc, int x, int y, LPCSTR lpString, int c);
+int WINAPI NewTextOutA(HDC hdc, int x, int y, LPCSTR lpString, int c)
+{
+	if (GetPrivateProfileIntW(L"TextOutA", L"TBL_MAPPED", 0, iniPath))
+	{
+		unit16 uChar = 0;
+		memcpy((unit8*)&uChar + 1, lpString, 1);
+		memcpy((unit8*)&uChar, lpString + 1, 1);
+		if (uChar > 0x889F && uChar < 0x97EB)
+		{
+			//memcpy((unit8*)&uChar, (unit8*)tbl_data[uChar] + 1, 1);
+			//memcpy((unit8*)&uChar + 1, (unit8*)tbl_data[uChar], 1);
+			uChar = tbl_data[uChar];
+			unit8 p = 0;
+			memcpy(&p, (unit8*)&uChar + 1, 1);
+			memcpy((unit8*)&uChar + 1, (unit8*)&uChar, 1);
+			memcpy((unit8*)&uChar, &p, 1);
+			return ((PfuncTextOutA)g_pOldTextOutA)(hdc, x, y, (LPCSTR)&uChar, 2);
+		}
+	}
+	LPSTR String[MAX_PATH];
+	strncpy((unit8 *)String, lpString, c);
+	NodeTextOutA_Replace *q = TextOutA_Replace;
+	while (q->next != NULL)
+	{
+		q = q->next;
+		if (strncmp((unit8 *)String, q->OldlpString, c) == 0)
+		{
+			strncpy((unit8 *)String, q->NewlpString, c);
+			break;
+		}
+	}
+	return ((PfuncTextOutA)g_pOldTextOutA)(hdc, x, y, (LPCSTR)String, c);
+}
+
 PVOID g_pOldTextOutW = NULL;
 typedef int(WINAPI *PfuncTextOutW)(HDC hdc, int x, int y, LPCWSTR lpString, int c);
 int WINAPI NewTextOutW(HDC hdc, int x, int y, LPCWSTR lpString, int c)
 {
 	LPWSTR String[MAX_PATH];
-	wcscpy((wchar_t *)String, lpString);
+	wcsncpy((wchar_t *)String, lpString, c);
 	/*
 	if (IsOpen.OpenLonginusFile)
 	{
@@ -310,11 +351,11 @@ int WINAPI NewTextOutW(HDC hdc, int x, int y, LPCWSTR lpString, int c)
 		q = q->next;
 		if (wcsncmp((wchar_t *)String, q->OldlpString, c) == 0)
 		{
-			wcscpy((wchar_t *)String, q->NewlpString);
+			wcsncpy((wchar_t *)String, q->NewlpString, c);
 			break;
 		}
 	}
-	return ((PfuncTextOutW)g_pOldTextOutW)(hdc, x, y, String, wcslen(String));
+	return ((PfuncTextOutW)g_pOldTextOutW)(hdc, x, y, (LPCWSTR)String, c);
 }
 
 PVOID g_pOldCreateWindowExA = NULL;
@@ -334,7 +375,7 @@ typedef int(WINAPI *PfuncCreateWindowExW)(DWORD dwExStyle, LPCWSTR lpClassName, 
 int WINAPI NewCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y,
 	int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 {
-	LPCWSTR titlename = L"Longinus EXE 1.0.0.2|Longinus DLL 1.3.0.0";
+	LPCWSTR titlename = L"三国恋战记 追忆回想";
 	return ((PfuncCreateWindowExW)g_pOldCreateWindowExW)(dwExStyle, lpClassName, titlename, dwStyle, X, Y,
 		nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 }
@@ -355,6 +396,24 @@ int WINAPI NewSetWindowTextA(HWND hWnd, LPCSTR lpString)
 		}
 	}
 	return ((PfuncSetWindowTextA)g_pOldSetWindowTextA)(hWnd, textname);
+}
+
+PVOID g_pOldSetWindowTextW = NULL;
+typedef int(WINAPI *PfuncSetWindowTextW)(HWND hWnd, LPCWSTR lpString);
+int WINAPI NewSetWindowTextW(HWND hWnd, LPCWSTR lpString)
+{
+	LPCWSTR textname = lpString;
+	NodeSetWindowTextW_Replace *q = SetWindowTextW_Replace;
+	while (q->next != NULL)
+	{
+		q = q->next;
+		if (wcscmp(lpString, q->OldString) == 0)
+		{
+			textname = q->NewString;
+			break;
+		}
+	}
+	return ((PfuncSetWindowTextW)g_pOldSetWindowTextW)(hWnd, textname);
 }
 
 PVOID g_pOldMessageBoxA = NULL;
@@ -386,11 +445,65 @@ int WINAPI NewMessageBoxA(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType
 	return ((PfuncMessageBoxA)g_pOldMessageBoxA)(hWnd, textname, titlename, uType);
 }
 
+PVOID g_pOldMessageBoxW = NULL;
+typedef int(WINAPI *PfuncMessageBoxW)(HWND hWnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType);
+int WINAPI NewMessageBoxW(HWND hWnd, LPCWSTR lpText, LPCWSTR lpCaption, UINT uType)
+{
+	LPWSTR titlename[MAX_PATH];
+	wcscpy((wchar_t *)titlename, lpCaption);
+	NodeMessageBoxW_CaptionReplace *cq = MessageBoxW_CaptionReplace;
+	while (cq->next != NULL)
+	{
+		cq = cq->next;
+		if (wcscmp((wchar_t *)lpCaption, cq->OldString) == 0)
+		{
+			wcscpy((wchar_t *)titlename, cq->NewString);
+			break;
+		}
+	}
+	LPWSTR textname[MAX_PATH];
+	wcscpy((wchar_t *)textname, lpText);
+	NodeMessageBoxW_TextReplace *tq = MessageBoxW_TextReplace;
+	while (tq->next != NULL)
+	{
+		tq = tq->next;
+		if (wcscmp((wchar_t *)lpText, tq->OldString) == 0)
+		{
+			wcscpy((wchar_t *)textname, tq->NewString);
+			break;
+		}
+	}
+	return ((PfuncMessageBoxW)g_pOldMessageBoxW)(hWnd, (LPCWSTR)textname, (LPCWSTR)titlename, uType);
+}
+
+PVOID g_pOldGetDriveTypeA = NULL;
+typedef UINT(WINAPI *PfuncGetDriveTypeA)(LPCSTR lpRootPathName);
+UINT WINAPI NewGetDriveTypeA(LPCSTR lpRootPathName)
+{
+	return DRIVE_CDROM;
+}
+
 PVOID g_pOldGetDriveTypeW = NULL;
 typedef UINT(WINAPI *PfuncGetDriveTypeW)(LPCWSTR lpRootPathName);
 UINT WINAPI NewGetDriveTypeW(LPCWSTR lpRootPathName)
 {
 	return DRIVE_CDROM;
+}
+
+PVOID g_pOldFindFirstFileA = NULL;
+typedef UINT(WINAPI *PfuncFindFirstFileA)(LPCSTR lpFileName, LPWIN32_FIND_DATAA lpFindFileData);
+UINT WINAPI NewFindFirstFileA(LPCSTR lpFileName, LPWIN32_FIND_DATAA lpFindFileData)
+{
+	LPCSTR filename = "*.*";
+	return((PfuncFindFirstFileA)g_pOldFindFirstFileA)(filename, lpFindFileData);
+}
+
+PVOID g_pOldFindFirstFileW = NULL;
+typedef UINT(WINAPI *PfuncFindFirstFileW)(LPCWSTR lpFileName, LPWIN32_FIND_DATAW lpFindFileData);
+UINT WINAPI NewFindFirstFileW(LPCWSTR lpFileName, LPWIN32_FIND_DATAW lpFindFileData)
+{
+	LPCWSTR filename = L"*.*";
+	return ((PfuncFindFirstFileW)g_pOldFindFirstFileW)(filename, lpFindFileData);
 }
 
 PVOID g_pOldGetVolumeInformationW = NULL;
@@ -533,15 +646,19 @@ void GetSettings()
 	IsOpen.OpenCreateFileA = GetPrivateProfileIntW(L"Settings", L"CreateFileA", 0, iniPath);
 	IsOpen.OpenCreateFileW = GetPrivateProfileIntW(L"Settings", L"CreateFileW", 0, iniPath);
 	IsOpen.OpenSetWindowTextA = GetPrivateProfileIntW(L"Settings", L"SetWindowTextA", 0, iniPath);
+	IsOpen.OpenSetWindowTextW = GetPrivateProfileIntW(L"Settings", L"SetWindowTextW", 0, iniPath);
 	IsOpen.OpenMessageBoxA = GetPrivateProfileIntW(L"Settings", L"MessageBoxA", 0, iniPath);
+	IsOpen.OpenMessageBoxW = GetPrivateProfileIntW(L"Settings", L"MessageBoxW", 0, iniPath);
 	IsOpen.OpenGetProcAddress = GetPrivateProfileIntW(L"Settings", L"GetProcAddress", 0, iniPath);
 	IsOpen.OpenEnumFontFamiliesA = GetPrivateProfileIntW(L"Settings", L"EnumFontFamiliesA", 0, iniPath);
 	IsOpen.OpenEnumFontFamiliesEx = GetPrivateProfileIntW(L"Settings", L"EnumFontFamiliesEx", 0, iniPath);
 	IsOpen.OpenBorderPatch = GetPrivateProfileIntW(L"Settings", L"BorderPatch", 0, iniPath);
 	IsOpen.OpenChangeFace = GetPrivateProfileIntW(L"Settings", L"ChangeFace", 0, iniPath);
 	IsOpen.OpenlstrcpyW = GetPrivateProfileIntW(L"Settings", L"lstrcpyW", 0, iniPath);
+	IsOpen.OpenTextOutA = GetPrivateProfileIntW(L"Settings", L"TextOutA", 0, iniPath);
 	IsOpen.OpenTextOutW = GetPrivateProfileIntW(L"Settings", L"TextOutW", 0, iniPath);
-	IsOpen.OpenGetDriveTypeW = GetPrivateProfileIntW(L"Settings", L"GetDriveTypeW", 0, iniPath);
+	IsOpen.OpenGetDriveType = GetPrivateProfileIntW(L"Settings", L"GetDriveType", 0, iniPath);
+	IsOpen.OpenFindFirstFile = GetPrivateProfileIntW(L"Settings", L"FindFirstFile", 0, iniPath);
 	IsOpen.OpenGetVolumeInformationW = GetPrivateProfileIntW(L"Settings", L"GetVolumeInformationW", 0, iniPath);
 	IsOpen.OpenLonginusFile = GetPrivateProfileIntW(L"Settings", L"Longinus_File", 0, iniPath);
 	if (IsOpen.OpenLonginusFile)
@@ -618,6 +735,25 @@ void GetSettings()
 			q = row;
 		}
 	}
+	if (IsOpen.OpenSetWindowTextW)
+	{
+		DWORD SetWindowTextW_Count = GetPrivateProfileIntW(L"SetWindowTextW", L"Count", 0, iniPath);
+		NodeSetWindowTextW_Replace *q;
+		q = malloc(sizeof(NodeSetWindowTextW_Replace));
+		SetWindowTextW_Replace = q;
+		for (DWORD i = 1; i <= SetWindowTextW_Count; i++)
+		{
+			NodeSetWindowTextW_Replace *row;
+			row = malloc(sizeof(NodeSetWindowTextW_Replace));
+			row->next = NULL;
+			wsprintfW(buff, L"OldString%d", i);
+			GetPrivateProfileStringW(L"SetWindowTextW", buff, NULL, row->OldString, MAX_PATH, iniPath);
+			wsprintfW(buff, L"NewString%d", i);
+			GetPrivateProfileStringW(L"SetWindowTextW", buff, NULL, row->NewString, MAX_PATH, iniPath);
+			q->next = row;
+			q = row;
+		}
+	}
 	if (IsOpen.OpenMessageBoxA)
 	{
 		DWORD MessageBoxA_TextCount = GetPrivateProfileIntW(L"MessageBoxA", L"TextCount", 0, iniPath);
@@ -653,6 +789,41 @@ void GetSettings()
 			wsprintfW(buff, L"CaptionNewString%d", i);
 			GetPrivateProfileStringW(L"MessageBoxA", buff, NULL, buff, MAX_PATH, iniPath);
 			WideCharToMultiByte(CP_ACP, 0, buff, -1, crow->NewString, MAX_PATH, NULL, NULL);
+			cq->next = crow;
+			cq = crow;
+		}
+	}
+	if (IsOpen.OpenMessageBoxW)
+	{
+		DWORD MessageBoxW_TextCount = GetPrivateProfileIntW(L"MessageBoxW", L"TextCount", 0, iniPath);
+		NodeMessageBoxW_TextReplace *tq;
+		tq = malloc(sizeof(NodeMessageBoxW_TextReplace));
+		MessageBoxW_TextReplace = tq;
+		for (DWORD i = 1; i <= MessageBoxW_TextCount; i++)
+		{
+			NodeMessageBoxW_TextReplace *trow;
+			trow = malloc(sizeof(NodeMessageBoxW_TextReplace));
+			trow->next = NULL;
+			wsprintfW(buff, L"TextOldString%d", i);
+			GetPrivateProfileStringW(L"MessageBoxW", buff, NULL, trow->OldString, MAX_PATH, iniPath);
+			wsprintfW(buff, L"TextNewString%d", i);
+			GetPrivateProfileStringW(L"MessageBoxW", buff, NULL, trow->NewString, MAX_PATH, iniPath);
+			tq->next = trow;
+			tq = trow;
+		}
+		DWORD MessageBoxW_CaptionCount = GetPrivateProfileIntW(L"MessageBoxW", L"CaptionCount", 0, iniPath);
+		NodeMessageBoxW_CaptionReplace *cq;
+		cq = malloc(sizeof(NodeMessageBoxW_CaptionReplace));
+		MessageBoxW_CaptionReplace = cq;
+		for (DWORD i = 1; i <= MessageBoxW_CaptionCount; i++)
+		{
+			NodeMessageBoxW_CaptionReplace *crow;
+			crow = malloc(sizeof(NodeMessageBoxW_CaptionReplace));
+			crow->next = NULL;
+			wsprintfW(buff, L"CaptionOldString%d", i);
+			GetPrivateProfileStringW(L"MessageBoxW", buff, NULL, crow->OldString, MAX_PATH, iniPath);
+			wsprintfW(buff, L"CaptionNewString%d", i);
+			GetPrivateProfileStringW(L"MessageBoxW", buff, NULL, crow->NewString, MAX_PATH, iniPath);
 			cq->next = crow;
 			cq = crow;
 		}
@@ -738,6 +909,40 @@ void GetSettings()
 			GetPrivateProfileStringW(L"lstrcpyW", buff, NULL, row->OldlpString2, MAX_PATH, iniPath);
 			wsprintfW(buff, L"NewlpString%d", i);
 			GetPrivateProfileStringW(L"lstrcpyW", buff, NULL, row->NewlpString2, MAX_PATH, iniPath);
+			q->next = row;
+			q = row;
+		}
+	}
+	if (IsOpen.OpenTextOutA)
+	{
+		if (GetPrivateProfileIntW(L"TextOutA", L"TBL_MAPPED", 0, iniPath))
+		{
+			GetPrivateProfileStringW(L"TextOutA", L"TBL", L"", buff, MAX_PATH, iniPath);
+			if (buff == L"")
+			{
+				MessageBoxW(NULL, L"未指定TBL文件名，请于TextOutA下添加TBL配置！", L"错误", MB_OK);
+				exit(0);
+			}
+			FILE *tbl = _wfopen(buff, L"rb");
+			tbl_data = malloc(0xFF00 * 2);
+			fread(tbl_data, 1, 0xFF00 * 2, tbl);
+			fclose(tbl);
+		}
+		DWORD TextOutA_Count = GetPrivateProfileIntW(L"TextOutA", L"Count", 0, iniPath);
+		NodeTextOutA_Replace *q;
+		q = malloc(sizeof(NodeTextOutA_Replace));
+		TextOutA_Replace = q;
+		for (DWORD i = 1; i <= TextOutA_Count; i++)
+		{
+			NodeTextOutA_Replace *row;
+			row = malloc(sizeof(NodeTextOutA_Replace));
+			row->next = NULL;
+			wsprintfW(buff, L"OldlpString%d", i);
+			GetPrivateProfileStringW(L"TextOutA", buff, NULL, buff, MAX_PATH, iniPath);
+			WideCharToMultiByte(CP_ACP, 0, buff, -1, row->OldlpString, MAX_PATH, NULL, NULL);
+			wsprintfW(buff, L"NewlpString%d", i);
+			GetPrivateProfileStringW(L"TextOutA", buff, NULL, buff, MAX_PATH, iniPath);
+			WideCharToMultiByte(CP_ACP, 0, buff, -1, row->NewlpString, MAX_PATH, NULL, NULL);
 			q->next = row;
 			q = row;
 		}
@@ -977,15 +1182,55 @@ BOOL APIENTRY SetHook()
 		g_pOldlstrcpyW = DetourFindFunction("kernel32.dll", "lstrcpyW");
 		DetourAttach(&g_pOldlstrcpyW, NewlstrcpyW);
 	}
+	if (IsOpen.OpenTextOutA)
+	{
+		g_pOldTextOutA = DetourFindFunction("GDI32.dll", "TextOutA");
+		DetourAttach(&g_pOldTextOutA, NewTextOutA);
+	}
 	if (IsOpen.OpenTextOutW)
 	{
 		g_pOldTextOutW = DetourFindFunction("GDI32.dll", "TextOutW");
 		DetourAttach(&g_pOldTextOutW, NewTextOutW);
 	}
-	if (IsOpen.OpenGetDriveTypeW)
+	if (IsOpen.OpenGetDriveType)
 	{
-		g_pOldGetDriveTypeW = DetourFindFunction("kernel32.dll", "GetDriveTypeW");
-		DetourAttach(&g_pOldGetDriveTypeW, NewGetDriveTypeW);
+		if (GetPrivateProfileIntW(L"GetDriveType", L"Mode", 0, iniPath) == 0)
+		{
+			g_pOldGetDriveTypeA = DetourFindFunction("kernel32.dll", "GetDriveTypeA");
+			DetourAttach(&g_pOldGetDriveTypeA, NewGetDriveTypeA);
+		}
+		if (GetPrivateProfileIntW(L"GetDriveType", L"Mode", 0, iniPath) == 1)
+		{
+			g_pOldGetDriveTypeW = DetourFindFunction("kernel32.dll", "GetDriveTypeW");
+			DetourAttach(&g_pOldGetDriveTypeW, NewGetDriveTypeW);
+		}
+		if (GetPrivateProfileIntW(L"GetDriveType", L"Mode", 0, iniPath) == 2)
+		{
+			g_pOldGetDriveTypeA = DetourFindFunction("kernel32.dll", "GetDriveTypeA");
+			DetourAttach(&g_pOldGetDriveTypeA, NewGetDriveTypeA);
+			g_pOldGetDriveTypeW = DetourFindFunction("kernel32.dll", "GetDriveTypeW");
+			DetourAttach(&g_pOldGetDriveTypeW, NewGetDriveTypeW);
+		}
+	}
+	if (IsOpen.OpenFindFirstFile)
+	{
+		if (GetPrivateProfileIntW(L"FindFirstFile", L"Mode", 0, iniPath) == 0)
+		{
+			g_pOldFindFirstFileA = DetourFindFunction("kernel32.dll", "FindFirstFileA");
+			DetourAttach(&g_pOldFindFirstFileA, NewFindFirstFileA);
+		}
+		if (GetPrivateProfileIntW(L"FindFirstFile", L"Mode", 0, iniPath) == 1)
+		{
+			g_pOldFindFirstFileW = DetourFindFunction("kernel32.dll", "FindFirstFileW");
+			DetourAttach(&g_pOldFindFirstFileW, NewFindFirstFileW);
+		}
+		if (GetPrivateProfileIntW(L"FindFirstFile", L"Mode", 0, iniPath) == 2)
+		{
+			g_pOldFindFirstFileA = DetourFindFunction("kernel32.dll", "FindFirstFileA");
+			DetourAttach(&g_pOldFindFirstFileA, NewFindFirstFileA);
+			g_pOldFindFirstFileW = DetourFindFunction("kernel32.dll", "FindFirstFileW");
+			DetourAttach(&g_pOldFindFirstFileW, NewFindFirstFileW);
+		}
 	}
 	if (IsOpen.OpenGetVolumeInformationW)
 	{
@@ -1025,10 +1270,20 @@ BOOL APIENTRY SetHook()
 		g_pOldSetWindowTextA = DetourFindFunction("USER32.dll", "SetWindowTextA");
 		DetourAttach(&g_pOldSetWindowTextA, NewSetWindowTextA);
 	}
+	if (IsOpen.OpenSetWindowTextW)
+	{
+		g_pOldSetWindowTextW = DetourFindFunction("USER32.dll", "SetWindowTextW");
+		DetourAttach(&g_pOldSetWindowTextW, NewSetWindowTextW);
+	}
 	if (IsOpen.OpenMessageBoxA)
 	{
 		g_pOldMessageBoxA = DetourFindFunction("USER32.dll", "MessageBoxA");
 		DetourAttach(&g_pOldMessageBoxA, NewMessageBoxA);
+	}
+	if (IsOpen.OpenMessageBoxW)
+	{
+		g_pOldMessageBoxW = DetourFindFunction("USER32.dll", "MessageBoxW");
+		DetourAttach(&g_pOldMessageBoxW, NewMessageBoxW);
 	}
 	if (IsOpen.OpenGetProcAddress)
 	{
@@ -1099,10 +1354,34 @@ BOOL APIENTRY DropHook()
 		DetourDetach(&g_pOldCreateFileW, NewCreateFileW);
 	if (IsOpen.OpenlstrcpyW)
 		DetourDetach(&g_pOldlstrcpyW, NewlstrcpyW);
+	if (IsOpen.OpenTextOutA)
+		DetourDetach(&g_pOldTextOutA, NewTextOutA);
 	if (IsOpen.OpenTextOutW)
 		DetourDetach(&g_pOldTextOutW, NewTextOutW);
-	if (IsOpen.OpenGetDriveTypeW)
-		DetourDetach(&g_pOldGetDriveTypeW, NewGetDriveTypeW);
+	if (IsOpen.OpenGetDriveType)
+	{
+		if (GetPrivateProfileIntW(L"GetDriveType", L"Mode", 0, iniPath) == 0)
+			DetourDetach(&g_pOldGetDriveTypeA, NewGetDriveTypeA);
+		else if (GetPrivateProfileIntW(L"GetDriveType", L"Mode", 0, iniPath) == 1)
+			DetourDetach(&g_pOldGetDriveTypeW, NewGetDriveTypeW);
+		else if (GetPrivateProfileIntW(L"GetDriveType", L"Mode", 0, iniPath) == 2)
+		{
+			DetourDetach(&g_pOldGetDriveTypeA, NewGetDriveTypeA);
+			DetourDetach(&g_pOldGetDriveTypeW, NewGetDriveTypeW);
+		}
+	}
+	if (IsOpen.OpenFindFirstFile)
+	{
+		if (GetPrivateProfileIntW(L"FindFirstFile", L"Mode", 0, iniPath) == 0)
+			DetourDetach(&g_pOldFindFirstFileA, NewFindFirstFileA);
+		else if (GetPrivateProfileIntW(L"FindFirstFile", L"Mode", 0, iniPath) == 1)
+			DetourDetach(&g_pOldFindFirstFileW, NewFindFirstFileW);
+		else if (GetPrivateProfileIntW(L"FindFirstFile", L"Mode", 0, iniPath) == 2)
+		{
+			DetourDetach(&g_pOldFindFirstFileA, NewFindFirstFileA);
+			DetourDetach(&g_pOldFindFirstFileW, NewFindFirstFileW);
+		}
+	}
 	if(IsOpen.OpenGetVolumeInformationW)
 		DetourDetach(&g_pOldGetVolumeInformationW, NewGetVolumeInformationW);
 	if (IsOpen.OpenGetGlyphOutline)
@@ -1121,8 +1400,12 @@ BOOL APIENTRY DropHook()
 		DetourDetach(&g_pOldWideCharToMultiByte, NewWideCharToMultiByte);
 	if (IsOpen.OpenSetWindowTextA)
 		DetourDetach(&g_pOldSetWindowTextA, NewSetWindowTextA);
+	if (IsOpen.OpenSetWindowTextW)
+		DetourDetach(&g_pOldSetWindowTextW, NewSetWindowTextW);
 	if (IsOpen.OpenMessageBoxA)
 		DetourDetach(&g_pOldMessageBoxA, NewMessageBoxA);
+	if (IsOpen.OpenMessageBoxW)
+		DetourDetach(&g_pOldMessageBoxW, NewMessageBoxW);
 	if (IsOpen.OpenGetProcAddress)
 		DetourDetach(&g_pOldGetProcAddress, NewGetProcAddress);
 	if (IsOpen.OpenCreateWindowEx)
