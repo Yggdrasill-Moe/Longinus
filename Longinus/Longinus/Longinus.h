@@ -34,6 +34,8 @@ struct IsOpen_s
 	BOOL OpenlstrcpyW;
 	BOOL OpenTextOutA;
 	BOOL OpenTextOutW;
+	BOOL OpenLonginusLog;
+	BOOL OpenLonginusPlus;
 }IsOpen;
 
 typedef struct SetWindowTextA_Replace_s
@@ -157,6 +159,8 @@ BOOL First_Border_Patch = FALSE;
 BOOL ChangeFace_All = FALSE;
 DWORD oldProtect;
 unit16 *tbl_data;
+FILE *LogFile_Char = NULL;
+FILE *LogFile_Wchar = NULL;
 
 void ChangeFace(HMODULE hModule, unit32 Offset, unit32 Size, char *Face);
 void BorderPatch(HMODULE hModule, unit32 Offset, unit8 Border);

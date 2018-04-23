@@ -1,7 +1,7 @@
 /*
 用于读取Longinus.dat
 made by Yggdrasill（Darkness-TX & Destinyの火狐）
-2017.01.25
+2018.01.25
 */
 #include "Longinus_dat.h"
 
@@ -34,7 +34,7 @@ BOOL Read_Dat(LPWSTR fname)
 		MessageBoxW(NULL, L"Longinus_File的文件头不对！", L"错误", MB_OK);
 		exit(0);
 	}
-	if(Dat_Index.version[0] != 1|| Dat_Index.version[1] != 3|| Dat_Index.version[2] != 0)
+	if (Dat_Index.version[0] != 1 || Dat_Index.version[1] != 3 || Dat_Index.version[2] != 0)
 	{
 		fclose(src);
 		MessageBoxW(NULL, L"Longinus_File的版本不对！", L"错误", MB_OK);
@@ -42,6 +42,44 @@ BOOL Read_Dat(LPWSTR fname)
 	}
 	fseek(src, 0x10, SEEK_SET);
 	if (Hash_Table_Build(src))
+	{
+		fclose(src);
+		return TRUE;
+	}
+	fclose(src);
+	MessageBoxW(NULL, L"Longinus_File读取出现异常！", L"错误", MB_OK);
+	return FALSE;
+}
+
+BOOL Read_DatV4(LPWSTR fname)
+{
+	FILE *src = _wfopen(fname, L"rb");
+	if (src == NULL)
+	{
+		MessageBoxW(NULL, L"Longinus.dat不存在！\n请检查文件名是否正确\n或于配置文件中关闭Longinus_File。", L"错误", MB_OK);
+		exit(0);
+	}
+	fread(&Dat_IndexV4, sizeof(Dat_IndexV4), 1, src);
+	if (strncmp(Dat_IndexV4.magic, "Longinus", 8))
+	{
+		fclose(src);
+		MessageBoxW(NULL, L"Longinus_File的文件头不对！", L"错误", MB_OK);
+		exit(0);
+	}
+	if (Dat_IndexV4.version[0] != 1 || Dat_IndexV4.version[1] != 4 || Dat_IndexV4.version[2] != 0)
+	{
+		fclose(src);
+		MessageBoxW(NULL, L"Longinus_File的版本不对！", L"错误", MB_OK);
+		exit(0);
+	}
+	if (Dat_IndexV4.mode != 1)
+	{
+		fclose(src);
+		MessageBoxW(NULL, L"Longinus_File的模式不对！", L"错误", MB_OK);
+		exit(0);
+	}
+	fseek(src, 0x10, SEEK_SET);
+	if (Hash_Table_BuildV4(src))
 	{
 		fclose(src);
 		return TRUE;
@@ -95,6 +133,29 @@ BOOL Hash_Table_Build(FILE *src)
 		q = index_node;
 	}
 	if (ftell(src) == filesize)
+		return TRUE;
+	else
+		return FALSE;
+}
+
+BOOL Hash_Table_BuildV4(FILE *src)
+{
+	unit32 i = 0;
+	LinkIndex_DataV4 q;
+	q = malloc(sizeof(NodeIndex_DataV4));
+	Index_DataV4 = q;
+	for (i = 0; i < Dat_IndexV4.count; i++)
+	{
+		NodeIndex_DataV4 *index_node;
+		index_node = malloc(sizeof(NodeIndex_DataV4));
+		fread(&index_node->hash, 4, 1, src);
+		fread(&index_node->size, 4, 1, src);
+		fread(&index_node->offset, 4, 1, src);
+		index_node->next = NULL;
+		q->next = index_node;
+		q = index_node;
+	}
+	if (ftell(src) == (Dat_IndexV4.count * 0x0C + 0x10))
 		return TRUE;
 	else
 		return FALSE;

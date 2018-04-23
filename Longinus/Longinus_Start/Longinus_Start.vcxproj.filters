@@ -33,5 +33,8 @@
     <Image Include="Longinus.ico">
       <Filter>资源文件</Filter>
     </Image>
+    <Image Include="..\..\..\..\..\Desktop\君之余影静静地摇曳着_00001.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

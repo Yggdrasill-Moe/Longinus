@@ -6,6 +6,7 @@
 made by Yggdrasill£¨Darkness-TX & Destiny¤Î»ðºü£©
 2017.01.09
 */
+#include "Longinus_RioShiina.h"
 #include "Longinus_dat.h"
 #include "Longinus.h"
 
@@ -105,6 +106,11 @@ PVOID g_pOldWideCharToMultiByte = NULL;
 typedef int(WINAPI *PfuncWideCharToMultiByte)(UINT CodePage, DWORD dwFlags, LPCWSTR lpWideCharStr, int cchWideChar, LPSTR lpMultiByteStr, int cbMultiByte, LPCSTR lpDefaultChar, LPBOOL lpUsedDefaultChar);
 int WINAPI NewWideCharToMultiByte(UINT CodePage, DWORD dwFlags, LPCWSTR lpWideCharStr, int cchWideChar, LPSTR lpMultiByteStr, int cbMultiByte, LPCSTR lpDefaultChar, LPBOOL lpUsedDefaultChar)
 {
+	if (LogFile_Wchar != NULL)
+	{
+		fputws(lpWideCharStr, LogFile_Wchar);
+		fputws(L"\n", LogFile_Wchar);
+	}
 	if (CodePage == 932 || CodePage == CP_ACP)
 		CodePage = WideCharToMultiByte_CodePage;
 	return ((PfuncWideCharToMultiByte)g_pOldWideCharToMultiByte)(CodePage, dwFlags, lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte, lpDefaultChar, lpUsedDefaultChar);
@@ -204,6 +210,11 @@ typedef int(WINAPI *PfuncCreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess, 
 int WINAPI NewCreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
 	LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
 {
+	if (LogFile_Char != NULL)
+	{
+		fputs(lpFileName, LogFile_Char);
+		fputs("\n", LogFile_Char);
+	}
 	LPCSTR filename = lpFileName;
 	NodeCreateFileA_Replace *q = CreateFileA_Replace;
 	while (q->next != NULL)
@@ -245,6 +256,11 @@ PVOID g_pOldlstrcpyW = NULL;
 typedef int(WINAPI *PfunclstrcpyW)(LPWSTR lpString1, LPCWSTR lpString2);
 int WINAPI NewlstrcpyW(LPWSTR lpString1,  LPCWSTR lpString2)
 {
+	if (LogFile_Wchar != NULL)
+	{
+		fputws(lpString2, LogFile_Wchar);
+		fputws(L"\n", LogFile_Wchar);
+	}
 	LPWSTR lpString[MAX_PATH];
 	wcscpy((wchar_t *)lpString, lpString2);
 	if (IsOpen.OpenLonginusFile)
@@ -290,16 +306,14 @@ int WINAPI NewTextOutA(HDC hdc, int x, int y, LPCSTR lpString, int c)
 		unit16 uChar = 0;
 		memcpy((unit8*)&uChar + 1, lpString, 1);
 		memcpy((unit8*)&uChar, lpString + 1, 1);
-		if (uChar > 0x889F && uChar < 0x97EB)
+		if (uChar >= 0x8140 && uChar <= 0x9A00)
 		{
-			//memcpy((unit8*)&uChar, (unit8*)tbl_data[uChar] + 1, 1);
-			//memcpy((unit8*)&uChar + 1, (unit8*)tbl_data[uChar], 1);
 			uChar = tbl_data[uChar];
 			unit8 p = 0;
 			memcpy(&p, (unit8*)&uChar + 1, 1);
 			memcpy((unit8*)&uChar + 1, (unit8*)&uChar, 1);
 			memcpy((unit8*)&uChar, &p, 1);
-			return ((PfuncTextOutA)g_pOldTextOutA)(hdc, x, y, (LPCSTR)&uChar, 2);
+			return ((PfuncTextOutA)g_pOldTextOutA)(hdc, x, y, (LPCSTR)&uChar, c);
 		}
 	}
 	LPSTR String[MAX_PATH];
@@ -661,10 +675,44 @@ void GetSettings()
 	IsOpen.OpenFindFirstFile = GetPrivateProfileIntW(L"Settings", L"FindFirstFile", 0, iniPath);
 	IsOpen.OpenGetVolumeInformationW = GetPrivateProfileIntW(L"Settings", L"GetVolumeInformationW", 0, iniPath);
 	IsOpen.OpenLonginusFile = GetPrivateProfileIntW(L"Settings", L"Longinus_File", 0, iniPath);
+	IsOpen.OpenLonginusLog = GetPrivateProfileIntW(L"Settings", L"Longinus_Log", 0, iniPath);
+	IsOpen.OpenLonginusPlus = GetPrivateProfileIntW(L"Settings", L"Longinus_Plus", 0, iniPath);
 	if (IsOpen.OpenLonginusFile)
 	{
-		if (!Read_Dat(L"Longinus.dat"))
+		if (!Read_DatV4(L"Longinus.dat"))
 			exit(0);
+	}
+	if (IsOpen.OpenLonginusLog)
+	{
+		GetPrivateProfileStringW(L"Longinus_Log", L"Log_Mode", NULL, buff, 10, iniPath);
+		if (wcsncmp(buff, L"CHAR", 4) == 0)
+			LogFile_Char = fopen("Longinus_Char.log", "wt");
+		else if (wcsncmp(buff, L"WCHAR", 5) == 0)
+			LogFile_Wchar = fopen("Longinus_Wchar.log", "wt,ccs=UNICODE");
+		else if (wcsncmp(buff, L"ALL", 3) == 0)
+		{
+			LogFile_Char = fopen("Longinus_Char.log", "wt");
+			LogFile_Wchar = fopen("Longinus_Wchar.log", "wt,ccs=UNICODE");
+		}
+	}
+	if (IsOpen.OpenLonginusPlus)
+	{
+		GetPrivateProfileStringW(L"Longinus_Plus", L"Plus_Engine", NULL, buff, 20, iniPath);
+		if (wcsncmp(buff, L"RioShiina", 9) == 0)
+		{
+			GetPrivateProfileStringW(L"Longinus_Plus", L"RS_pGetFileName", NULL, buff, 20, iniPath);
+			RS.RS_pGetFileName = (PVOID)CheckString(buff);
+			GetPrivateProfileStringW(L"Longinus_Plus", L"RS_pGetDataOffset", NULL, buff, 20, iniPath);
+			RS.RS_pGetDataOffset = (PVOID)CheckString(buff);
+			GetPrivateProfileStringW(L"Longinus_Plus", L"RS_pGetDataSize", NULL, buff, 20, iniPath);
+			RS.RS_pGetDataSize = (PVOID)CheckString(buff);
+			GetPrivateProfileStringW(L"Longinus_Plus", L"RS_pCopyFileToMem", NULL, buff, 20, iniPath);
+			RS.RS_pCopyFileToMem = (PVOID)CheckString(buff);
+			if (IsOpen.OpenLonginusLog)
+				RS.LogFile = fopen("RioShiina_hook.log", "wt");
+			else
+				RS.LogFile = NULL;
+		}
 	}
 	if (IsOpen.OpenCreateFontIndirect)
 	{
@@ -1107,6 +1155,19 @@ BOOL APIENTRY SetHook()
 		EnumFontFamiliesAPatch();
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
+	if (IsOpen.OpenLonginusPlus);
+	{
+		wchar_t *buff = malloc(20);
+		GetPrivateProfileStringW(L"Longinus_Plus", L"Plus_Engine", NULL, buff, 20, iniPath);
+		if (wcsncmp(buff, L"RioShiina", 9) == 0)
+		{
+			DetourAttach((PVOID*)&RS.RS_pGetFileName, RS_GetFileName);
+			DetourAttach((PVOID*)&RS.RS_pGetDataOffset, RS_GetDataOffset);
+			DetourAttach((PVOID*)&RS.RS_pGetDataSize, RS_GetDataSize);
+			DetourAttach((PVOID*)&RS.RS_pCopyFileToMem, RS_CopyFileToMem);
+		}
+		free(buff);
+	}
 	if (IsOpen.OpenCreateFontIndirect)
 	{
 		if (GetPrivateProfileIntW(L"CreateFontIndirect", L"Mode", 0, iniPath) == 0)
@@ -1312,6 +1373,19 @@ BOOL APIENTRY DropHook()
 {
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
+	if (IsOpen.OpenLonginusPlus);
+	{
+		wchar_t *buff = malloc(20);
+		GetPrivateProfileStringW(L"Longinus_Plus", L"Plus_Engine", NULL, buff, 20, iniPath);
+		if (wcsncmp(buff, L"RioShiina", 9) == 0)
+		{
+			DetourDetach((PVOID*)&RS.RS_pGetFileName, RS_GetFileName);
+			DetourDetach((PVOID*)&RS.RS_pGetDataOffset, RS_GetDataOffset);
+			DetourDetach((PVOID*)&RS.RS_pGetDataSize, RS_GetDataSize);
+			DetourDetach((PVOID*)&RS.RS_pCopyFileToMem, RS_CopyFileToMem);
+		}
+		free(buff);
+	}
 	if (IsOpen.OpenCreateFontIndirect)
 	{
 		if (GetPrivateProfileIntW(L"CreateFontIndirect", L"Mode", 0, iniPath) == 0)
