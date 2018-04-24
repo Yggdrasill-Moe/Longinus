@@ -7,6 +7,7 @@ made by Yggdrasill£¨Darkness-TX & Destiny¤Î»ðºü£©
 2017.01.09
 */
 #include "Longinus_RioShiina.h"
+#include "Longinus_CMVS.h"
 #include "Longinus_dat.h"
 #include "Longinus.h"
 
@@ -713,6 +714,19 @@ void GetSettings()
 			else
 				RS.LogFile = NULL;
 		}
+		else if (wcsncmp(buff, L"CMVS", 4) == 0)
+		{
+			GetPrivateProfileStringW(L"Longinus_Plus", L"CMVS_pGetFileName", NULL, buff, 20, iniPath);
+			CMVS.CMVS_pGetFileName = (PVOID)CheckString(buff);
+			GetPrivateProfileStringW(L"Longinus_Plus", L"CMVS_pGetDataSize", NULL, buff, 20, iniPath);
+			CMVS.CMVS_pGetDataSize = (PVOID)CheckString(buff);
+			GetPrivateProfileStringW(L"Longinus_Plus", L"CMVS_pCopyFileToMem", NULL, buff, 20, iniPath);
+			CMVS.CMVS_pCopyFileToMem = (PVOID)CheckString(buff);
+			if (IsOpen.OpenLonginusLog)
+				CMVS.LogFile = fopen("CMVS_hook.log", "wt");
+			else
+				CMVS.LogFile = NULL;
+		}
 	}
 	if (IsOpen.OpenCreateFontIndirect)
 	{
@@ -1166,6 +1180,12 @@ BOOL APIENTRY SetHook()
 			DetourAttach((PVOID*)&RS.RS_pGetDataSize, RS_GetDataSize);
 			DetourAttach((PVOID*)&RS.RS_pCopyFileToMem, RS_CopyFileToMem);
 		}
+		else if (wcsncmp(buff, L"CMVS", 4) == 0)
+		{
+			DetourAttach((PVOID*)&CMVS.CMVS_pGetFileName, CMVS_GetFileName);
+			DetourAttach((PVOID*)&CMVS.CMVS_pGetDataSize, CMVS_GetDataSize);
+			DetourAttach((PVOID*)&CMVS.CMVS_pCopyFileToMem, CMVS_CopyFileToMem);
+		}
 		free(buff);
 	}
 	if (IsOpen.OpenCreateFontIndirect)
@@ -1383,6 +1403,12 @@ BOOL APIENTRY DropHook()
 			DetourDetach((PVOID*)&RS.RS_pGetDataOffset, RS_GetDataOffset);
 			DetourDetach((PVOID*)&RS.RS_pGetDataSize, RS_GetDataSize);
 			DetourDetach((PVOID*)&RS.RS_pCopyFileToMem, RS_CopyFileToMem);
+		}
+		else if (wcsncmp(buff, L"CMVS", 4) == 0)
+		{
+			DetourDetach((PVOID*)&CMVS.CMVS_pGetFileName, CMVS_GetFileName);
+			DetourDetach((PVOID*)&CMVS.CMVS_pGetDataSize, CMVS_GetDataSize);
+			DetourDetach((PVOID*)&CMVS.CMVS_pCopyFileToMem, CMVS_CopyFileToMem);
 		}
 		free(buff);
 	}

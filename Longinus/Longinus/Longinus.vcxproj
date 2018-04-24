@@ -149,11 +149,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Longinus.c" />
+    <ClCompile Include="Longinus_CMVS.c" />
     <ClCompile Include="Longinus_dat.c" />
     <ClCompile Include="Longinus_RioShiina.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Longinus.h" />
+    <ClInclude Include="Longinus_CMVS.h" />
     <ClInclude Include="Longinus_dat.h" />
     <ClInclude Include="Longinus_RioShiina.h" />
     <ClInclude Include="resource.h" />

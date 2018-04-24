@@ -24,6 +24,9 @@
     <ClCompile Include="Longinus_RioShiina.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Longinus_CMVS.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -36,6 +39,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Longinus_RioShiina.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Longinus_CMVS.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
