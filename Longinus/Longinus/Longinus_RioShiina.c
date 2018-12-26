@@ -14,7 +14,7 @@ __declspec(naked)让编译器不优化，所有实现由我们实现，对于jmp类型的hook，
 如果主程序崩溃的话可以在开头加个messagebox暂停，再附加，
 附加后可以用Ctrl+G直接跳转到hook地址再一步步看看jmp过程学习下两者区别
 naked函数就不要带参数了，要带的话可以写成另一个函数然后在naked函数中
-先push aaaa在call bbbb，见RS_CopyFileToMem
+先push aaaa在call bbbb
 */
 __declspec(naked)void RS_GetFileName()
 {

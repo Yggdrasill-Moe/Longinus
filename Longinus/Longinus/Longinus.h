@@ -32,6 +32,7 @@ struct IsOpen_s
 	BOOL OpenBorderPatch;
 	BOOL OpenChangeFace;
 	BOOL OpenlstrcpyW;
+	BOOL OpenlstrcpyA;
 	BOOL OpenTextOutA;
 	BOOL OpenTextOutW;
 	BOOL OpenLonginusLog;

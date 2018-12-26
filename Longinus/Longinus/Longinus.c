@@ -195,12 +195,13 @@ int WINAPI NewGetGlyphOutlineA(HDC hdc, UINT uChar, UINT fuFormat, LPGLYPHMETRIC
 			sprintf(newlogfont.lfFaceName, "%s", "Arial");
 			newhFont = CreateFontIndirectA(&newlogfont);
 			oldhFont = (HFONT)SelectObject(hdc, newhFont);
-			GetObjectA(oldhFont, sizeof(LOGFONTW), &oldlogfont);
+			GetObjectA(oldhFont, sizeof(LOGFONTA), &oldlogfont);
 			sprintf(oldlogfont.lfFaceName, "%s", "Arial");
 			oldhFont = CreateFontIndirectA(&oldlogfont);
 			newhFont = (HFONT)SelectObject(hdc, oldhFont);
 			DeleteObject(newhFont);
 		}
+		return GetGlyphOutlineW(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
 	}
 	return ((PfuncGetGlyphOutlineA)g_pOldGetGlyphOutlineA)(hdc, uChar, fuFormat, lpgm, cjBuffer, pvBuffer, lpmat2);
 }
@@ -237,6 +238,11 @@ typedef int(WINAPI *PfuncCreateFileW)(LPCWSTR lpFileName, DWORD dwDesiredAccess,
 int WINAPI NewCreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
 	LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
 {
+	if (LogFile_Wchar != NULL)
+	{
+		fputws(lpFileName, LogFile_Wchar);
+		fputws(L"\n", LogFile_Wchar);
+	}
 	LPWSTR filename[MAX_PATH];
 	wcscpy((wchar_t *)filename, lpFileName);
 	NodeCreateFileW_Replace *q = CreateFileW_Replace;
@@ -251,6 +257,18 @@ int WINAPI NewCreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwSha
 	}
 	return ((PfuncCreateFileW)g_pOldCreateFileW)((LPCWSTR)filename, dwDesiredAccess, dwShareMode,
 		lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+}
+
+PVOID g_pOldlstrcpyA = NULL;
+typedef int(WINAPI *PfunclstrcpyA)(LPSTR lpString1, LPCSTR lpString2);
+int WINAPI NewlstrcpyA(LPSTR lpString1, LPCSTR lpString2)
+{
+	if (LogFile_Char != NULL)
+	{
+		fputs(lpString2, LogFile_Char);
+		fputs("\n", LogFile_Char);
+	}
+	return ((PfunclstrcpyA)g_pOldlstrcpyA)(lpString1, lpString2);
 }
 
 PVOID g_pOldlstrcpyW = NULL;
@@ -307,15 +325,84 @@ int WINAPI NewTextOutA(HDC hdc, int x, int y, LPCSTR lpString, int c)
 		unit16 uChar = 0;
 		memcpy((unit8*)&uChar + 1, lpString, 1);
 		memcpy((unit8*)&uChar, lpString + 1, 1);
-		if (uChar >= 0x8140 && uChar <= 0x9A00)
+		if (uChar >= 0x8140 && uChar <= 0xE000)
 		{
+			wchar_t buff[20];
+			GetPrivateProfileStringW(L"TextOutA", L"YF_CODING", NULL, buff, 20, iniPath);
+			if (uChar == CheckString(buff))
+			{
+				uChar = 0x266A;
+				if (c == 2)
+				{
+					LOGFONTA newlogfont;
+					LOGFONTA oldlogfont;
+					HFONT newhFont;
+					HFONT oldhFont;
+					newlogfont.lfHeight = 30;
+					newlogfont.lfWidth = 0;
+					newlogfont.lfWeight = 0;
+					newlogfont.lfEscapement = 0;
+					newlogfont.lfOrientation = 0;
+					newlogfont.lfItalic = 0;
+					newlogfont.lfUnderline = 0;
+					newlogfont.lfStrikeOut = 0;
+					newlogfont.lfCharSet = DEFAULT_CHARSET;
+					newlogfont.lfOutPrecision = 0;
+					newlogfont.lfClipPrecision = 0;
+					newlogfont.lfQuality = 0;
+					newlogfont.lfPitchAndFamily = 0;
+					sprintf(newlogfont.lfFaceName, "%s", "Arial");
+					newhFont = CreateFontIndirectA(&newlogfont);
+					oldhFont = (HFONT)SelectObject(hdc, newhFont);
+					GetObjectA(oldhFont, sizeof(LOGFONTA), &oldlogfont);
+					sprintf(oldlogfont.lfFaceName, "%s", "Arial");
+					oldhFont = CreateFontIndirectA(&oldlogfont);
+					newhFont = (HFONT)SelectObject(hdc, oldhFont);
+					DeleteObject(newhFont);
+				}
+				return TextOutW(hdc, x, y, (LPCWSTR)&uChar, c);
+			}
+			GetPrivateProfileStringW(L"TextOutA", L"XIN_CODING", NULL, buff, 20, iniPath);
+			if (uChar == CheckString(buff))
+			{
+				uChar = 0x2764;
+				if (c == 2)
+				{
+					LOGFONTA newlogfont;
+					LOGFONTA oldlogfont;
+					HFONT newhFont;
+					HFONT oldhFont;
+					newlogfont.lfHeight = 30;
+					newlogfont.lfWidth = 0;
+					newlogfont.lfWeight = 0;
+					newlogfont.lfEscapement = 0;
+					newlogfont.lfOrientation = 0;
+					newlogfont.lfItalic = 0;
+					newlogfont.lfUnderline = 0;
+					newlogfont.lfStrikeOut = 0;
+					newlogfont.lfCharSet = DEFAULT_CHARSET;
+					newlogfont.lfOutPrecision = 0;
+					newlogfont.lfClipPrecision = 0;
+					newlogfont.lfQuality = 0;
+					newlogfont.lfPitchAndFamily = 0;
+					sprintf(newlogfont.lfFaceName, "%s", "Arial");
+					newhFont = CreateFontIndirectA(&newlogfont);
+					oldhFont = (HFONT)SelectObject(hdc, newhFont);
+					GetObjectA(oldhFont, sizeof(LOGFONTA), &oldlogfont);
+					sprintf(oldlogfont.lfFaceName, "%s", "Arial");
+					oldhFont = CreateFontIndirectA(&oldlogfont);
+					newhFont = (HFONT)SelectObject(hdc, oldhFont);
+					DeleteObject(newhFont);
+				}
+				return TextOutW(hdc, x, y, (LPCWSTR)&uChar, c);
+			}
 			uChar = tbl_data[uChar];
 			unit8 p = 0;
 			memcpy(&p, (unit8*)&uChar + 1, 1);
 			memcpy((unit8*)&uChar + 1, (unit8*)&uChar, 1);
 			memcpy((unit8*)&uChar, &p, 1);
-			return ((PfuncTextOutA)g_pOldTextOutA)(hdc, x, y, (LPCSTR)&uChar, c);
 		}
+		return ((PfuncTextOutA)g_pOldTextOutA)(hdc, x, y, (LPCSTR)&uChar, c);
 	}
 	LPSTR String[MAX_PATH];
 	strncpy((unit8 *)String, lpString, c);
@@ -379,7 +466,7 @@ typedef int(WINAPI *PfuncCreateWindowExA)(DWORD dwExStyle, LPCSTR lpClassName, L
 int WINAPI NewCreateWindowExA(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle, int X, int Y,
 	int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 {
-	LPCSTR titlename = "Longinus EXE 1.0.0.2|Longinus DLL 1.3.0.0";
+	LPCSTR titlename = "Longinus EXE 1.0.0.2|Longinus DLL 1.4.1.0";
 	return ((PfuncCreateWindowExA)g_pOldCreateWindowExA)(dwExStyle, lpClassName, titlename, dwStyle, X, Y,
 		nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 }
@@ -390,7 +477,7 @@ typedef int(WINAPI *PfuncCreateWindowExW)(DWORD dwExStyle, LPCWSTR lpClassName, 
 int WINAPI NewCreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle, int X, int Y,
 	int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 {
-	LPCWSTR titlename = L"三国恋战记 追忆回想";
+	LPCWSTR titlename = L"Longinus EXE 1.0.0.2|Longinus DLL 1.4.1.0";
 	return ((PfuncCreateWindowExW)g_pOldCreateWindowExW)(dwExStyle, lpClassName, titlename, dwStyle, X, Y,
 		nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
 }
@@ -435,6 +522,13 @@ PVOID g_pOldMessageBoxA = NULL;
 typedef int(WINAPI *PfuncMessageBoxA)(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType);
 int WINAPI NewMessageBoxA(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType)
 {
+	if (LogFile_Char != NULL)
+	{
+		fputs(lpCaption, LogFile_Char);
+		fputs("|", LogFile_Char);
+		fputs(lpText, LogFile_Char);
+		fputs("\n", LogFile_Char);
+	}
 	LPCSTR titlename = lpCaption;
 	NodeMessageBoxA_CaptionReplace *cq = MessageBoxA_CaptionReplace;
 	while (cq->next != NULL)
@@ -670,6 +764,7 @@ void GetSettings()
 	IsOpen.OpenBorderPatch = GetPrivateProfileIntW(L"Settings", L"BorderPatch", 0, iniPath);
 	IsOpen.OpenChangeFace = GetPrivateProfileIntW(L"Settings", L"ChangeFace", 0, iniPath);
 	IsOpen.OpenlstrcpyW = GetPrivateProfileIntW(L"Settings", L"lstrcpyW", 0, iniPath);
+	IsOpen.OpenlstrcpyA = GetPrivateProfileIntW(L"Settings", L"lstrcpyA", 0, iniPath);
 	IsOpen.OpenTextOutA = GetPrivateProfileIntW(L"Settings", L"TextOutA", 0, iniPath);
 	IsOpen.OpenTextOutW = GetPrivateProfileIntW(L"Settings", L"TextOutW", 0, iniPath);
 	IsOpen.OpenGetDriveType = GetPrivateProfileIntW(L"Settings", L"GetDriveType", 0, iniPath);
@@ -722,6 +817,8 @@ void GetSettings()
 			CMVS.CMVS_pGetDataSize = (PVOID)CheckString(buff);
 			GetPrivateProfileStringW(L"Longinus_Plus", L"CMVS_pCopyFileToMem", NULL, buff, 20, iniPath);
 			CMVS.CMVS_pCopyFileToMem = (PVOID)CheckString(buff);
+			GetPrivateProfileStringW(L"Longinus_Plus", L"CMVS_pCopyPicToMem", NULL, buff, 20, iniPath);
+			CMVS.CMVS_pCopyPicToMem = (PVOID)CheckString(buff);
 			if (IsOpen.OpenLonginusLog)
 				CMVS.LogFile = fopen("CMVS_hook.log", "wt");
 			else
@@ -1185,6 +1282,7 @@ BOOL APIENTRY SetHook()
 			DetourAttach((PVOID*)&CMVS.CMVS_pGetFileName, CMVS_GetFileName);
 			DetourAttach((PVOID*)&CMVS.CMVS_pGetDataSize, CMVS_GetDataSize);
 			DetourAttach((PVOID*)&CMVS.CMVS_pCopyFileToMem, CMVS_CopyFileToMem);
+			DetourAttach((PVOID*)&CMVS.CMVS_pCopyPicToMem, CMVS_CopyPicToMem);
 		}
 		free(buff);
 	}
@@ -1257,6 +1355,11 @@ BOOL APIENTRY SetHook()
 	{
 		g_pOldCreateFileW = DetourFindFunction("kernel32.dll", "CreateFileW");
 		DetourAttach(&g_pOldCreateFileW, NewCreateFileW);
+	}
+	if (IsOpen.OpenlstrcpyA)
+	{
+		g_pOldlstrcpyA = DetourFindFunction("kernel32.dll", "lstrcpyA");
+		DetourAttach(&g_pOldlstrcpyA, NewlstrcpyA);
 	}
 	if (IsOpen.OpenlstrcpyW)
 	{
@@ -1409,6 +1512,7 @@ BOOL APIENTRY DropHook()
 			DetourDetach((PVOID*)&CMVS.CMVS_pGetFileName, CMVS_GetFileName);
 			DetourDetach((PVOID*)&CMVS.CMVS_pGetDataSize, CMVS_GetDataSize);
 			DetourDetach((PVOID*)&CMVS.CMVS_pCopyFileToMem, CMVS_CopyFileToMem);
+			DetourDetach((PVOID*)&CMVS.CMVS_pCopyPicToMem, CMVS_CopyPicToMem);
 		}
 		free(buff);
 	}
@@ -1452,6 +1556,8 @@ BOOL APIENTRY DropHook()
 		DetourDetach(&g_pOldCreateFileA, NewCreateFileA);
 	if (IsOpen.OpenCreateFileW)
 		DetourDetach(&g_pOldCreateFileW, NewCreateFileW);
+	if (IsOpen.OpenlstrcpyA)
+		DetourDetach(&g_pOldlstrcpyA, NewlstrcpyA);
 	if (IsOpen.OpenlstrcpyW)
 		DetourDetach(&g_pOldlstrcpyW, NewlstrcpyW);
 	if (IsOpen.OpenTextOutA)

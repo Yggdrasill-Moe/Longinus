@@ -1,5 +1,6 @@
 /*
 CMVS引擎汉化临时方案
+图片注入方面只支持非差分图（大概？）
 made by Yggdrasill（Darkness-TX & Destinyの火狐）
 2018.04.24
 */
@@ -42,6 +43,21 @@ __declspec(naked)void CMVS_CopyFileToMem()
 		call CMVS_CopyFile
 		popad
 		jmp CMVS.CMVS_pCopyFileToMem
+	}
+}
+
+__declspec(naked)void CMVS_CopyPicToMem()
+{
+	__asm
+	{
+		pushad
+		mov CMVS.CMVS_PicOffset, ebx
+		//注意pushad后esp-0x20，所以原本应为esp + 0x150变为esp + 0x170
+		mov eax, dword ptr[esp + 0x170]
+		mov CMVS.CMVS_PicName, eax
+		call CMVS_CopyPicFile
+		popad
+		jmp CMVS.CMVS_pCopyPicToMem
 	}
 }
 
@@ -122,5 +138,62 @@ void WINAPI CMVS_CopyFile()
 		CMVS.CMVS_rGetDataSize = 0;
 		CMVS.CMVS_rGetFileName = 0;
 		CMVS.CMVS_NameHash = 0;
+	}
+}
+
+void WINAPI CMVS_CopyPicFile()
+{
+	char* PicName_Up = malloc(strlen(CMVS.CMVS_PicName) + 1);
+	memset(PicName_Up, 0, strlen(CMVS.CMVS_PicName) + 1);
+	for (unit32 i = 0; i < strlen(CMVS.CMVS_PicName); i++)
+		PicName_Up[i] = toupper(CMVS.CMVS_PicName[i]);
+	wchar_t* wPicName_Up = malloc(strlen(CMVS.CMVS_PicName) * 2 + 2);
+	memset(wPicName_Up, 0, strlen(CMVS.CMVS_PicName) * 2 + 2);
+	MultiByteToWideChar(CP_ACP, 0, PicName_Up, -1, wPicName_Up, strlen(CMVS.CMVS_PicName));
+	unit32 Hash = BKDRhash(wPicName_Up);
+	free(PicName_Up);
+	free(wPicName_Up);
+	NodeIndex_DataV4 *q = Index_DataV4;
+	while (q->next != NULL)
+	{
+		q = q->next;
+		if (Hash == q->hash)
+		{
+			CMVS.CMVS_PicHash = Hash;
+			break;
+		}
+	}
+	if (CMVS.CMVS_PicHash)
+	{
+		NodeIndex_DataV4 *q = Index_DataV4;
+		while (q->next != NULL)
+		{
+			q = q->next;
+			if (CMVS.CMVS_PicHash == q->hash)
+			{
+				unit8 *data = malloc(q->size);
+				memset(data, 0, q->size);
+				FILE *src = fopen("Longinus.dat", "rb");
+				fseek(src, q->offset, SEEK_SET);
+				fread(data, q->size, 1, src);
+				fclose(src);
+				memcpy((LPVOID)CMVS.CMVS_PicOffset, data, q->size);
+				free(data);
+				break;
+			}
+		}
+		if (CMVS.LogFile)
+		{
+			fputs(CMVS.CMVS_PicName, CMVS.LogFile);
+			fputs("|", CMVS.LogFile);
+			fprintf(CMVS.LogFile, "PicHash:0x%X", CMVS.CMVS_PicHash);
+			fputs("|", CMVS.LogFile);
+			fprintf(CMVS.LogFile, "PicSize:0x%X", q->size);
+			fputs("|", CMVS.LogFile);
+			fprintf(CMVS.LogFile, "PicOffset:0x%X", CMVS.CMVS_PicOffset);
+			fputs("\n", CMVS.LogFile);
+		}
+		CMVS.CMVS_PicHash = 0;
+		CMVS.CMVS_PicOffset = 0;
 	}
 }
