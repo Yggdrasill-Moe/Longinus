@@ -26,6 +26,7 @@ unit32 FrameNum = 0;
 unit32 BitAddress = 0;
 unit8 ITVName[32] = { 0 };
 unit8 dstName[128] = { 0 };
+SceUID fd = NULL;
 //unit32 pal[256] = { 0 };
 
 /*//不知道是不是libpng库太老了只要png_write_info就崩溃，所以注释掉
@@ -120,20 +121,18 @@ void BuildInfo()
 		Height = *(unit16 *)(GetStruct_add + 0x18);
 		BitAddress = *(unit32 *)(GetStruct_add + 0x1C);
 		GetFile_add = *(unit32 *)(GetStruct_add + 0x3C);
-		sprintf(dstName,"disc0:/PSP_GAME/USRDIR/mmv3/%s/pal.bin",ITVName);
-		SceUID fd = sceIoOpen(dstName, PSP_O_RDONLY, 0777);
+		sprintf(dstName,"disc0:/PSP_GAME/USRDIR/mmv3/%s.itv",ITVName);
+		fd = sceIoOpen(dstName, PSP_O_RDONLY, 0777);
 		sceIoRead(fd,(unit8 *)(GetFile_add + 0x1E),0x100 * 4);
-		sceIoClose(fd);
 	}
 }
 
 void ImportFrame()
 {
-	Frame = *(unit32 *)(GetStruct_add + 0x48);
-	sprintf(dstName,"disc0:/PSP_GAME/USRDIR/mmv3/%s/%03d.bin",ITVName,Frame);
-	SceUID fd = sceIoOpen(dstName, PSP_O_RDONLY, 0777);
+	//Frame = *(unit32 *)(GetStruct_add + 0x48);
 	sceIoRead(fd,(unit8 *)BitAddress,Width * Height);
-	sceIoClose(fd);
+	if (Frame == FrameNum)
+		sceIoClose(fd);
 }
 /*
 void GetFileName()
@@ -190,14 +189,17 @@ void ImportITV()
 int module_start(int argc, char *argv[])
 {
 	//内存中的hook地址，为了方便选择了函数最后的jr ra返回指令覆盖成j xxxxxxxx，跳转后一般已经还原了堆栈
-	unit32 hook_GetFileName = 0x0897A1DC;
+	//此处地址已经添加了用户模式后整体偏移的0x400，也就是原本为0x0897A1DC，如何查看偏移了多少？ppsspp中运行游戏调试->反汇编，
+	//stop暂停游戏，看看Modules中的kernel从哪里开始，一般是从0x8804000(psp默认加载地址)，用新的地址减去0x8804000就是偏移了多少
+	unit32 hook_GetFileName = 0x0897A5DC;
 	// j xxxxxxxx，MIPS指令是4字节对齐，所以j xxxxxxxx为内存地址右移两位后或j的opcode
 	//*(unit32 *)(hook_GetFileName) = 0x08000000 | (((unit32)GetFileName) & 0x0FFFFFFC) >> 2;
 	*(unit32 *)(hook_GetFileName) = 0x08000000 | (((unsigned int)GetInfo) & 0x0FFFFFFC) >> 2;
 	//最后需要刷新下内存
 	sceKernelDcacheWritebackInvalidateRange((const void *)hook_GetFileName, 4);
 	sceKernelIcacheInvalidateRange((const void *)hook_GetFileName, 4);
-	unit32 hook_GetStruct = 0x0897A020;
+	//此处地址已经添加了用户模式后整体偏移的0x400
+	unit32 hook_GetStruct = 0x0897A420;
 	//*(unit32 *)(hook_GetStruct) = 0x08000000 | (((unit32)GetStruct) & 0x0FFFFFFC) >> 2;
 	*(unit32 *)(hook_GetStruct) = 0x08000000 | (((unsigned int)ImportITV) & 0x0FFFFFFC) >> 2;
 	sceKernelDcacheWritebackInvalidateRange((const void *)hook_GetStruct, 4);
