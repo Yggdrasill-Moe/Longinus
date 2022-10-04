@@ -105,7 +105,7 @@ void WINAPI CMVS_CheckFileSize()
 
 void WINAPI CMVS_CopyFile()
 {
-	if (CMVS.CMVS_NameHash && CMVS.CMVS_rGetDataSize && CMVS.CMVS_pGetFileName)
+	if (CMVS.CMVS_NameHash && CMVS.CMVS_rGetDataSize && CMVS.CMVS_rGetFileName)
 	{
 		NodeIndex_DataV4 *q = Index_DataV4;
 		while (q->next != NULL)
