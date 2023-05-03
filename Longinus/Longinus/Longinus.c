@@ -1,7 +1,6 @@
 /*
-用于实现自制字库
-与GetGlyphOutline
-相兼容的汉化方式
+现在为可配置的Hook程序
+曾经为用于实现自制字库与GetGlyphOutline相兼容的汉化方式
 
 made by Yggdrasill（Darkness-TX & Destinyの火狐）
 2017.01.09

@@ -1,18 +1,18 @@
 TARGET = Longinus
+
 OBJS = main.o
 
-# Define to build this as a prx (instead of a static elf)
-BUILD_PRX = 1
-# Define the name of our custom exports (minus the .exp extension)
-PRX_EXPORTS = exports.exp
-
-CFLAGS = -O2 -G0 -Wall -fno-strict-aliasing
+INCDIR = 
+CFLAGS = -O2 -G0 -Wall -std=gnu99
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 ASFLAGS = $(CFLAGS)
 
 LIBDIR =
 LDFLAGS =
-LIBS = 
+LIBS =
 
-PSPSDK = $(shell psp-config --pspsdk-path)
+PSP_FW_VERSION = 500
+PRX_EXPORTS = exports.exp
+
+PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build_prx.mak

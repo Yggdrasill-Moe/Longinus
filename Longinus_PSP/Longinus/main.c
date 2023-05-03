@@ -1,3 +1,8 @@
+/*
+PSP版Hook插件
+made by Yggdrasill（Darkness-TX & Destinyの火狐）
+2019.10.21
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,10 +13,13 @@ typedef unsigned char  unit8;
 typedef unsigned short unit16;
 typedef unsigned int   unit32;
 
-/* Define the module info section */
+/*
+必须为用户模式，虽然启动程序为内核模式，但如果插件也为内核模式，那地址会变成内核空间的地址，
+在实机中，游戏EBOOT为用户模式，执行到Hook点后如果jump到了内核空间那这指令本身就是非法的，必然游戏导致崩溃，
+用户模式只能通过syscall来使用内核空间中的函数，所以插件必须为用户模式jump才能合法，但模拟器没有还原实机的权限限制，不受影响。
+*/
 PSP_MODULE_INFO("Longinus", PSP_MODULE_USER, 1, 0);
 
-/* Define the main thread's attribute value (optional) */
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | THREAD_ATTR_VFPU);
 
 unit32 GetFileName_add = 0;
@@ -190,12 +198,12 @@ int module_start(int argc, char *argv[])
 {
 	//内存中的hook地址，为了方便选择了函数最后的jr ra返回指令覆盖成j xxxxxxxx，跳转后一般已经还原了堆栈
 	//此处地址已经添加了用户模式后整体偏移的0x400，也就是原本为0x0897A1DC，如何查看偏移了多少？ppsspp中运行游戏调试->反汇编，
-	//stop暂停游戏，看看Modules中的kernel从哪里开始，一般是从0x8804000(psp默认加载地址)，用新的地址减去0x8804000就是偏移了多少
+	//stop暂停游戏，看看Modules中的游戏模块从哪里开始，一般是从0x8804000(psp默认加载地址)，用新的地址减去0x8804000就是偏移了多少
 	unit32 hook_GetFileName = 0x0897A5DC;
 	// j xxxxxxxx，MIPS指令是4字节对齐，所以j xxxxxxxx为内存地址右移两位后或j的opcode
 	//*(unit32 *)(hook_GetFileName) = 0x08000000 | (((unit32)GetFileName) & 0x0FFFFFFC) >> 2;
 	*(unit32 *)(hook_GetFileName) = 0x08000000 | (((unsigned int)GetInfo) & 0x0FFFFFFC) >> 2;
-	//最后需要刷新下内存
+	//根据情况，最后可能需要刷新下内存
 	sceKernelDcacheWritebackInvalidateRange((const void *)hook_GetFileName, 4);
 	sceKernelIcacheInvalidateRange((const void *)hook_GetFileName, 4);
 	//此处地址已经添加了用户模式后整体偏移的0x400

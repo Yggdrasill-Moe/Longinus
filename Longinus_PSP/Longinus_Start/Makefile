@@ -1,14 +1,15 @@
 TARGET = EBOOT
 
-OBJS = main.o
+OBJS = ModuleMgrForKernel.o KUBridge.o main.o
 
 INCDIR = 
-CFLAGS = -O2 -G0 -Wall
+CFLAGS = -O2 -G0 -Wall -std=gnu99
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 ASFLAGS = $(CFLAGS)
 
 LIBDIR =
 LDFLAGS =
+LIBS =
 
 PSP_FW_VERSION = 500
 PRX_EXPORTS = exports.exp
