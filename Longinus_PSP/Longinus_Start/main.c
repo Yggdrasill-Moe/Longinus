@@ -75,7 +75,10 @@ void LonginusStartThreadsrwz2()
 {
 	int status, i = 0;
 	u8 check = 0;
+	u8 mcheck = 0;
 	u32 fontaddr = 0x89EAA20;
+	u32 bgmaddr = 0x89CB390;
+	u32 bgmnameaddr = 0x8C5D444;
 	u32* vram32;
 	SceCtrlData pad;
 	sceCtrlSetSamplingCycle(0);
@@ -84,9 +87,8 @@ void LonginusStartThreadsrwz2()
 	sceDisplaySetMode(0, 480, 272);
 	sceDisplaySetFrameBuf(vram32, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
 	SceUID fd = sceIoOpen("disc0:/PSP_GAME/SYSDIR/intro.bin", PSP_O_RDONLY, 0777);
-	for (i = 0;i < 272*3;i++)
+	for (i = 0;i < 272;i++)
 		sceIoRead(fd,(u8*)vram32 + i * 512 * 4,480 * 4);
-	sceIoClose(fd);
 	while(1)
 	{
 		sceCtrlReadBufferPositive(&pad, 1);
@@ -94,18 +96,43 @@ void LonginusStartThreadsrwz2()
 		{
 			if (pad.Buttons & PSP_CTRL_LEFT)
 			{
-				sceDisplaySetFrameBuf((u8*)vram32+512*272*4, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
+				sceIoLseek(fd,0x7F800,SEEK_SET);
+				for (i = 0;i < 272;i++)
+					sceIoRead(fd,(u8*)vram32 + i * 512 * 4,160 * 4);
+				sceDisplaySetFrameBuf(vram32, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
 				sceDisplayWaitVblankStart();
 				check = 0;
 			}
 			else if (pad.Buttons & PSP_CTRL_RIGHT)
 			{
-				sceDisplaySetFrameBuf((u8*)vram32+512*272*4*2, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
+				sceIoLseek(fd,0xAA000,SEEK_SET);
+				for (i = 0;i < 272;i++)
+					sceIoRead(fd,(u8*)vram32 + i * 512 * 4,160 * 4);
+				sceDisplaySetFrameBuf(vram32, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
 				sceDisplayWaitVblankStart();
 				check = 1;
 			}
+			else if (pad.Buttons & PSP_CTRL_UP)
+			{
+				sceIoLseek(fd,0xD4800,SEEK_SET);
+				for (i = 0;i < 272;i++)
+					sceIoRead(fd,(u8*)vram32 + i * 512 * 4 + 160 * 4,160 * 4);
+				sceDisplaySetFrameBuf(vram32, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
+				sceDisplayWaitVblankStart();
+				mcheck = 0;
+			}
+			else if (pad.Buttons & PSP_CTRL_DOWN)
+			{
+				sceIoLseek(fd,0xFF000,SEEK_SET);
+				for (i = 0;i < 272;i++)
+					sceIoRead(fd,(u8*)vram32 + i * 512 * 4 + 160 * 4,160 * 4);
+				sceDisplaySetFrameBuf(vram32, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
+				sceDisplayWaitVblankStart();
+				mcheck = 1;
+			}
 			else if (pad.Buttons & PSP_CTRL_CIRCLE)
 			{
+				sceIoClose(fd);
 				memset((u8*)vram32,0,512 * 272 * 4*3);
 				sceDisplaySetFrameBuf(vram32, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
 				sceDisplayWaitVblankStart();
@@ -117,6 +144,39 @@ void LonginusStartThreadsrwz2()
 						fd = sceIoOpen("disc0:/PSP_GAME/SYSDIR/FONT.BIN", PSP_O_RDONLY, 0777);
 						sceIoRead(fd,(u8 *)fontaddr,0x144800);
 						sceIoClose(fd);
+					}
+					if (mcheck == 1)
+					{
+						fd = sceIoOpen("disc0:/PSP_GAME/SYSDIR/BGM.BIN", PSP_O_RDONLY, 0777);
+						sceIoRead(fd,(u8 *)bgmaddr,0x208);
+						sceIoClose(fd);
+						*(u32 *)bgmnameaddr = 0x444F4D;//MOD
+					}
+					sceKernelStartModule(meboot, 0, NULL, &status, NULL);
+				}
+				sceKernelExitDeleteThread(0);
+			}
+			else if (pad.Buttons & PSP_CTRL_CROSS)
+			{
+				sceIoClose(fd);
+				memset((u8*)vram32,0,512 * 272 * 4*3);
+				sceDisplaySetFrameBuf(vram32, 512, PSP_DISPLAY_PIXEL_FORMAT_8888, 1);
+				sceDisplayWaitVblankStart();
+				SceUID meboot = sceKernelLoadModuleDisc("disc0:/PSP_GAME/SYSDIR/EBOOT.WXY", 0, NULL);
+				if (meboot >= 0)
+				{
+					if (check == 1)
+					{
+						fd = sceIoOpen("disc0:/PSP_GAME/SYSDIR/FONT.BIN", PSP_O_RDONLY, 0777);
+						sceIoRead(fd,(u8 *)fontaddr,0x144800);
+						sceIoClose(fd);
+					}
+					if (mcheck == 1)
+					{
+						fd = sceIoOpen("disc0:/PSP_GAME/SYSDIR/BGM.BIN", PSP_O_RDONLY, 0777);
+						sceIoRead(fd,(u8 *)bgmaddr,0x208);
+						sceIoClose(fd);
+						*(u32 *)bgmnameaddr = 0x444F4D;//MOD
 					}
 					sceKernelStartModule(meboot, 0, NULL, &status, NULL);
 				}
